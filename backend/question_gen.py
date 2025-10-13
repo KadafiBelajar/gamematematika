@@ -43,22 +43,39 @@ def _generate_options(correct_answer):
 
 def _gen_substitusi(level):
     x = Symbol('x')
-    point = random.randint(-3, 3)
     
     if level == 1: # Linear
+        point = random.randint(-3, 3)
         a, b = random.randint(1, 5), random.randint(-5, 5)
         f = a * x + b
         gen_type = 'substitusi_linear'
     elif level == 2: # Kuadrat
+        point = random.randint(-3, 3)
         a, b, c = random.randint(1, 4), random.randint(-5, 5), random.randint(-5, 5)
         f = a * x**2 + b * x + c
         gen_type = 'substitusi_kuadrat'
-    else: # Level 3 - Rasional
-        den_a, den_b = random.randint(1, 3), random.randint(1, 5)
-        while den_a * point + den_b == 0:
-            den_b = random.randint(1, 5)
-        num_a, num_b = random.randint(1, 5), random.randint(-5, 5)
-        f = (num_a * x + num_b) / (den_a * x + den_b)
+    else: # Level 3 - Rasional (DENGAN PERBAIKAN)
+        while True: # Loop untuk memastikan fungsi tidak konstan
+            point = random.randint(-3, 3)
+            den_a, den_b = random.randint(1, 3), random.randint(1, 5)
+            
+            # Pastikan penyebut tidak nol pada titik limit
+            while den_a * point + den_b == 0:
+                point = random.randint(-3, 3)
+                den_b = random.randint(1, 5)
+                
+            num_a, num_b = random.randint(1, 5), random.randint(-5, 5)
+            
+            # Buat objek Sympy untuk pembilang dan penyebut
+            num = num_a * x + num_b
+            den = den_a * x + den_b
+            
+            # Cek apakah fungsi menyederhanakan menjadi konstanta
+            # Jika tidak, keluar dari loop
+            if not (num/den).is_constant(x):
+                f = num / den
+                break
+            
         gen_type = 'substitusi_rasional'
 
     ans = limit(f, x, point)

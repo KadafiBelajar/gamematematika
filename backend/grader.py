@@ -12,34 +12,40 @@ def check_answer(user_answer, correct_answer):
 # ==============================================================================
 
 def _solve_substitusi(f, x, point):
-    """Menghasilkan langkah-langkah untuk metode substitusi langsung."""
+    """
+    Menghasilkan langkah-langkah untuk metode substitusi langsung.
+    Versi ini memecah ekspresi menjadi suku-suku untuk kontrol penuh atas PEMDAS.
+    """
 
     # Helper function untuk menggabungkan suku-suku LaTeX dengan benar
     def join_latex_terms(terms_list):
         result = ""
-        for i, term in enumerate(terms_list):
-            term = term.strip()
-            is_neg = term.startswith('-')
+        for i, term_str in enumerate(terms_list):
+            term_str = term_str.strip()
+            # Tentukan apakah suku bernilai negatif
+            is_neg = term_str.startswith('-')
+            
             if i == 0:
-                result = term
+                result = term_str
             else:
                 if is_neg:
-                    result += f" - {term[1:]}"
+                    # Tambahkan sebagai operasi pengurangan
+                    result += f" - {term_str[1:]}"
                 else:
-                    result += f" + {term}"
+                    # Tambahkan sebagai operasi penjumlahan
+                    result += f" + {term_str}"
         return result
 
     num, den = f.as_numer_denom()
     calc_steps = []
     explanation_text = ""
 
-    # Kasus A-2: Fungsi Rasional (Pecahan) - Tidak ada perubahan
+    # Kasus untuk fungsi rasional tidak berubah
     if den != 1:
-        # Logika untuk fungsi pecahan tetap sama
+        # ... (Logika untuk fungsi rasional tetap sama persis seperti sebelumnya)
         den_val_at_point = den.subs(x, point)
-        if den_val_at_point == 0:
-            return ("Error: Substitusi menghasilkan penyebut nol, seharusnya ini tipe soal lain.", "")
-        explanation_text = f"Ini adalah fungsi rasional (pecahan)...."
+        if den_val_at_point == 0: return ("Error:...", "")
+        explanation_text = f"Ini adalah fungsi rasional..."
         num_sub_display = sympify(str(num).replace('x', f"({point})"))
         den_sub_display = sympify(str(den).replace('x', f"({point})"))
         calc_steps.append(rf"\lim_{{x \to {point}}} {latex(f)} &= \frac{{{latex(num_sub_display)}}}{{\latex(den_sub_display)}}")
@@ -50,74 +56,61 @@ def _solve_substitusi(f, x, point):
         hasil_akhir = limit(f, x, point)
         if (num_evaluated / den_evaluated) != hasil_akhir:
             calc_steps.append(f"&= {latex(hasil_akhir)}")
-        # ... Akhir logika pecahan ...
-
-    # Kasus A-1: Fungsi Polinomial (Bukan Pecahan) - LOGIKA FINAL V2
+        
+    # --- PENDEKATAN BARU UNTUK FUNGSI POLINOMIAL ---
     else:
         explanation_text = "Karena ini adalah fungsi polinomial yang kontinu, kita bisa langsung menemukan nilainya dengan metode substitusi langsung:"
         
+        # Pecah ekspresi f menjadi daftar suku-suku [4x^2, -4x, -5]
+        terms = f.as_ordered_terms()
+        
         # --- Langkah 1: Substitusi ---
         point_latex = latex(sympify(point))
-        str_f_latex = latex(f).replace(' - ', ' + -')
-        display_substitution = str_f_latex.replace('x', f"({point_latex})").replace('+ -', '- ')
+        substituted_terms_latex = []
+        for term in terms:
+            # Ganti 'x' di representasi LaTeX dari setiap suku
+            term_latex = latex(term).replace('x', f"({point_latex})")
+            substituted_terms_latex.append(term_latex)
         
+        display_substitution = join_latex_terms(substituted_terms_latex)
         calc_steps.append(rf"\lim_{{x \to {point}}} {latex(f)} &= {display_substitution}")
-
-        str_f_calc = str(f).replace(' - ', ' + -')
-        str_expr = str_f_calc.replace('x', f"({point})")
-        current_expr = sympify(str_expr, evaluate=False)
-        last_latex_rhs = display_substitution
+        last_display = display_substitution
         
         # --- Langkah 2: Evaluasi Pangkat (Exponents) ---
-        expr_after_pow = current_expr.replace(lambda p: isinstance(p, Pow) and p.base.is_number, lambda p: p.base ** p.exp)
-        if expr_after_pow != current_expr:
-            # Fungsi untuk membuat format tampilan seperti 4(9) atau -5(2)
-            def format_pow_step(expression):
-                if isinstance(expression, Add):
-                    terms = []
-                    for arg in expression.args:
-                        if isinstance(arg, Mul) and len(arg.args) == 2:
-                            terms.append(f"{latex(arg.args[0])}({latex(arg.args[1])})")
-                        else:
-                            terms.append(latex(arg))
-                    return join_latex_terms(terms)
-                elif isinstance(expression, Mul) and len(expression.args) == 2:
-                    return f"{latex(expression.args[0])}({latex(expression.args[1])})"
+        has_power = any('^' in term for term in substituted_terms_latex)
+        if has_power:
+            power_eval_terms_latex = []
+            for term in terms:
+                # Lakukan substitusi dan evaluasi pangkat pada setiap suku
+                term_after_pow = term.subs(x, point).replace(
+                    lambda p: isinstance(p, Pow) and p.base.is_number, 
+                    lambda p: p.base ** p.exp
+                )
+                # Format khusus untuk tampilan, misal: 4(9)
+                if isinstance(term_after_pow, Mul):
+                    coeff, val = term_after_pow.as_coeff_Mul()
+                    power_eval_terms_latex.append(f"{latex(coeff)}({latex(val)})")
                 else:
-                    return latex(expression)
-            
-            display_after_pow = format_pow_step(expr_after_pow)
-            
-            if display_after_pow != last_latex_rhs:
-                calc_steps.append(f"&= {display_after_pow}")
-                last_latex_rhs = display_after_pow
-            current_expr = expr_after_pow
+                    power_eval_terms_latex.append(latex(term_after_pow))
 
+            display_after_power = join_latex_terms(power_eval_terms_latex)
+            if display_after_power != last_display:
+                calc_steps.append(f"&= {display_after_power}")
+                last_display = display_after_power
+        
         # --- Langkah 3: Evaluasi Perkalian (Multiplication) ---
-        # Cek apakah ada perkalian yang perlu dilakukan
-        has_multiplication = any(isinstance(arg, Mul) for arg in (current_expr.args if isinstance(current_expr, Add) else [current_expr]))
-        if has_multiplication:
-            if isinstance(current_expr, Add):
-                multiplied_terms_vals = [arg.doit() for arg in current_expr.args]
-                current_expr_after_mul = Add(*multiplied_terms_vals, evaluate=False)
-            else: # Hanya satu suku
-                multiplied_terms_vals = [current_expr.doit()]
-                current_expr_after_mul = sympify(multiplied_terms_vals[0])
-
-            latex_terms = [latex(val) for val in multiplied_terms_vals]
-            display_after_mul = join_latex_terms(latex_terms)
-
-            if display_after_mul != last_latex_rhs:
-                calc_steps.append(f"&= {display_after_mul}")
-                last_latex_rhs = display_after_mul
-            current_expr = current_expr_after_mul
-
+        multiplied_terms_latex = [latex(term.subs(x, point)) for term in terms]
+        display_after_multiplication = join_latex_terms(multiplied_terms_latex)
+        if display_after_multiplication != last_display:
+            calc_steps.append(f"&= {display_after_multiplication}")
+            last_display = display_after_multiplication
+            
         # --- Langkah 4: Hasil Akhir (Addition/Subtraction) ---
         hasil_akhir = limit(f, x, point)
-        if latex(current_expr.doit()) != last_latex_rhs:
+        if latex(hasil_akhir) != last_display:
             calc_steps.append(f"&= {latex(hasil_akhir)}")
 
-    # Membersihkan langkah duplikat (jika ada)
+    # Membersihkan langkah duplikat
     unique_steps = []
     if calc_steps:
         unique_steps.append(calc_steps[0])
