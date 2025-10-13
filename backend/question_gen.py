@@ -95,28 +95,33 @@ def _gen_faktorisasi(level):
         den = x - a
         point = a
         gen_type = 'faktorisasi_sederhana'
-    else: # Level 5 dan 6
+    elif level == 5:
+        # Level 5: Faktorisasi polinomial kuadrat
         b = random.randint(2, 5) * random.choice([-1, 1])
-        while a == b or a == -b: # Mencegah penyederhanaan yang terlalu mudah
+        while a == b or a == -b:
             b = random.randint(2, 5) * random.choice([-1, 1])
         
-        if level == 5:
-            # Level 5: Faktorisasi polinomial yang lebih sulit
-            # 1. Pembilang ditampilkan dalam bentuk yang sudah dijabarkan
-            num = expand((x - a) * (x - b))
-            
-            # 2. Penyebut memiliki koefisien yang juga perlu difaktorkan
-            c = random.choice([2, 3, 4]) 
-            den = c*x - c*a
-            
-            point = a
-            gen_type = 'faktorisasi_polinomial'
-        else: # Level 6
-            # Level 6: Faktorisasi kubik
-            num = x**3 - a**3
-            den = x - a
-            point = a
-            gen_type = 'faktorisasi_kubik'
+        num = expand((x - a) * (x - b))
+        c = random.choice([2, 3, 4]) 
+        den = c*x - c*a
+        point = a
+        gen_type = 'faktorisasi_polinomial'
+    else: # Level 6
+        # Level 6: Faktorisasi Kubik (pangkat 3) / Kuadrat (pangkat 2)
+        b = random.randint(2, 4) * random.choice([-1, 1])
+        c = random.randint(1, 3) * random.choice([-1, 1])
+        d = random.randint(2, 4) * random.choice([-1, 1])
+        while a == d:
+            d = random.randint(2, 4) * random.choice([-1, 1])
+
+        # Pembilang: (x-a)(x^2+bx+c) -> akan dijabarkan
+        num = expand((x - a) * (x**2 + b*x + c))
+        
+        # Penyebut: (x-a)(x-d) -> akan dijabarkan
+        den = expand((x - a) * (x - d))
+        
+        point = a
+        gen_type = 'faktorisasi_kubik'
             
     # Bagian di bawah ini tidak perlu diubah
     ans = limit(num / den, x, point)
