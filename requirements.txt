@@ -1,0 +1,9 @@
+Flask
+sympy
+blinker
+click
+colorama
+itsdangerous
+Jinja2
+MarkupSafe
+Werkzeug

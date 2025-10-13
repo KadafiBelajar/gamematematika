@@ -1,0 +1,29 @@
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Matematika: Limit</title>
+    
+    <!-- TAMBAHKAN BAGIAN INI -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- -------------------- -->
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Nowled</h1>
+        <p>Pilih mode untuk memulai!</p>
+        <div class="menu">
+            <a href="{{ url_for('stage_select') }}" class="menu-card">
+                <h2>Play Mode</h2>
+            </a>
+            <a href="{{ url_for('learn') }}" class="menu-card">
+                <h2>Training Mode</h2>
+            </a>
+        </div>
+    </div>
+</body>
+</html>

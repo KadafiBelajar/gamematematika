@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Pilih Level - {{ stage_name|title }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <!-- TAMBAHKAN BAGIAN INI -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- -------------------- -->
+</head>
+<body>
+    <div class="container">
+        <a href="{{ url_for('stage_select') }}" style="float: left;">Kembali ke Stage</a>
+        <h1>Stage: {{ stage_name|title }}</h1>
+        <p>Selesaikan level untuk membuka level berikutnya.</p>
+        
+        <div class="level-grid">
+            {# Loop ini akan membuat 15 kotak level. Logika state (locked/unlocked) akan datang dari app.py #}
+            {% for level in levels %}
+                {% if level.state == 'locked' %}
+                    <div class="level-box locked">
+                        <span>{{ level.number }}</span>
+                        <span class="lock-icon">🔒</span>
+                    </div>
+                {% else %}
+                    <a href="{{ url_for('main_game', stage_name=stage_name, level_num=level.number) }}" class="level-box {{ level.state }}">
+                        <span>{{ level.number }}</span>
+                    </a>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+</body>
+</html>

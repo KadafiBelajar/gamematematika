@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Main Gameplay</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    
+    <!-- Script Konfigurasi MathJax -->
+    <script>
+      MathJax = {
+        tex: {
+          inlineMath: [['$', '$']],
+          displayMath: [['$$', '$$']]
+        },
+        svg: {
+          fontCache: 'global'
+        }
+      };
+    </script>
+    <!-- Script MathJax dimuat secara sinkron untuk memastikan siap sebelum main.js -->
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" id="MathJax-script"></script>
+    <!-- Script logika game kita, ditunda hingga setelah parsing HTML -->
+    <script src="{{ url_for('static', filename='main.js') }}" defer></script>
+
+</head>
+<body>
+    <div class="game-container" data-stage-name="{{ stage_name }}" data-level-num="{{ level_num }}">
+        <a href="{{ url_for('level_select', stage_name=stage_name) }}" style="float: left;">Kembali ke Level</a>
+        <h1>{{ stage_name|title }} - Level {{ level_num }}</h1>
+        
+        <div id="question-area">
+            <p>Memuat soal...</p>
+        </div>
+
+        <div id="options-container" class="options-grid"></div>
+
+        <button id="submit-btn" disabled>Submit</button>
+
+        <div id="feedback-area"></div>
+
+        <div id="explanation-area" style="display: none; margin-top: 20px; padding: 15px; border: 1px solid #ccc; border-radius: 5px;">
+            <h3>Langkah Pengerjaan:</h3>
+            <div id="explanation-content"></div>
+        </div>
+
+        <button id="next-question-btn" class="hidden">Soal Berikutnya</button>
+
+    </div>
+
+</body>
+</html>

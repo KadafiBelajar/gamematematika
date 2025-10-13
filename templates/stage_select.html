@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Pilih Stage</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <!-- Tambahkan Font Awesome untuk ikon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- TAMBAHKAN BAGIAN INI -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- -------------------- -->
+</head>
+<body>
+    <div class="dev-menu">
+        <i class="fas fa-tools" onclick="unlockAllLevels()"></i>
+    </div>
+    <div class="container">
+        <a href="{{ url_for('index') }}" style="float: left;">Kembali ke Menu</a>
+        <h1>Pilih Stage</h1>
+        <div class="menu">
+            <!-- Kartu untuk Stage Limit -->
+            <a href="{{ url_for('level_select', stage_name='limit') }}" class="menu-card">
+                <h2>Limit</h2>
+            </a>
+            <!-- Kartu untuk Stage Turunan -->
+            <a href="{{ url_for('level_select', stage_name='turunan') }}" class="menu-card">
+                <h2>Turunan</h2>
+            </a>
+            <!-- Kartu untuk Stage Integral -->
+            <a href="{{ url_for('level_select', stage_name='integral') }}" class="menu-card">
+                <h2>Integral</h2>
+            </a>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='main.js') }}"></script>
+</body>
+</html>
