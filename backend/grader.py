@@ -162,23 +162,46 @@ def _solve_substitusi(f, x, point):
         return explanation_text, calculation_latex
 
 def _solve_faktorisasi(f, x, point):
-    # (Kode ini disalin dari file Anda untuk kelengkapan)
+    """Menghasilkan langkah-langkah untuk metode faktorisasi."""
     explanation_text = r"Substitusi langsung pada fungsi ini menghasilkan bentuk tak tentu $\frac{0}{0}$. Oleh karena itu, kita perlu menyederhanakan fungsi menggunakan metode faktorisasi:"
     num, den = f.as_numer_denom()
     num_factored = factor(num)
     den_factored = factor(den)
     f_canceled = cancel(f)
     hasil_akhir = limit(f, x, point)
+    
+    # --- PERBAIKAN DIMULAI DI SINI ---
+    
+    # Membuat string LaTeX secara aman
+    num_factored_latex = latex(num_factored)
+    den_factored_latex = latex(den_factored)
+    
+    # Membuat daftar langkah pengerjaan yang baru dan lebih detail
     calc_steps = [
-        rf"\lim_{{x \to {point}}} {latex(f)} &= \lim_{{x \to {point}}} \frac{{{latex(num_factored)}}}{{\latex(den_factored)}}",
-        rf"&= \lim_{{x \to {point}}} {latex(f_canceled)}", f"&= {latex(f_canceled.subs(x, point))}",
-        f"&= {latex(hasil_akhir)}"]
+        # Langkah 1: Tampilkan faktorisasi (tanpa 'lim' di sisi kanan)
+        rf"\lim_{{x \to {point}}} {latex(f)} &= \frac{{{num_factored_latex}}}{{{den_factored_latex}}}",
+        
+        # Langkah 2: Tampilkan fungsi setelah disederhanakan/dicoret (tanpa 'lim')
+        rf"&= {latex(f_canceled)}",
+        
+        # Langkah 3: Tampilkan proses substitusi (LANGKAH BARU)
+        f"&= {latex(f_canceled).replace('x', f'({point})')}",
+        
+        # Langkah 4: Tampilkan Hasil Akhir
+        f"&= {latex(hasil_akhir)}"
+    ]
+    
+    # Membersihkan jika ada langkah yang hasilnya identik
     unique_steps = []
     if calc_steps:
         unique_steps.append(calc_steps[0])
         for i in range(1, len(calc_steps)):
-            if unique_steps[-1].split('&=')[-1].strip() != calc_steps[i].split('&=')[-1].strip():
+            prev_rhs = unique_steps[-1].split('&=')[-1].strip()
+            current_rhs = calc_steps[i].split('&=')[-1].strip()
+            if prev_rhs != current_rhs:
                 unique_steps.append(calc_steps[i])
+
+    # Menggabungkan semua langkah
     calculation_latex = "\\begin{aligned}" + " \\\\ ".join(unique_steps) + "\\end{aligned}"
     return explanation_text, calculation_latex
 
