@@ -222,17 +222,11 @@ def _solve_rasionalisasi(f, x, point):
     else:
         return "Error: Tidak ditemukan bentuk akar untuk dirasionalisasi.", ""
 
-    # --- PERBAIKAN LOGIKA PENCARIAN SEKAWAN ---
-    # Logika baru yang lebih sederhana dan sesuai standar:
-    # Jika ekspresi adalah (A + B), maka sekawannya adalah (A - B).
     terms = target_expr.as_ordered_terms()
     if len(terms) == 2:
-        # Balik tanda suku kedua
         conjugate = terms[0] - terms[1]
     else:
-        # Fallback jika logika gagal (seharusnya tidak terjadi untuk soal level ini)
         return "Error: Gagal memproses bentuk sekawan.", ""
-    # --- AKHIR PERBAIKAN ---
 
     if is_num_target:
         num_rationalized = expand(num * conjugate)
@@ -246,14 +240,27 @@ def _solve_rasionalisasi(f, x, point):
     f_canceled = cancel(f_rationalized)
     hasil_akhir = limit(f, x, point)
     
+    # --- PERBAIKAN DIMULAI DI SINI ---
+    # Daftar langkah pengerjaan yang disempurnakan
     calc_steps = [
+        # Langkah 1: Kalikan dengan sekawan/sekawan
         rf"\lim_{{x \to {point}}} {latex(f)} &= \lim_{{x \to {point}}} \left( {latex(f)} \right) \cdot \frac{{{latex(conjugate)}}}{{{latex(conjugate)}}}",
+        
+        # Langkah 2: Tampilkan hasil perkalian sekawan
         rf"&= \lim_{{x \to {point}}} {rationalized_display}",
+        
+        # Langkah 3: Tampilkan setelah disederhanakan/dicoret
         rf"&= \lim_{{x \to {point}}} {latex(f_canceled)}",
-        f"&= {latex(f_canceled.subs(x, point))}",
+        
+        # Langkah 4: Tampilkan proses substitusi (LANGKAH BARU)
+        f"&= {latex(f_canceled).replace('x', f'({point})')}",
+        
+        # Langkah 5: Tampilkan Hasil Akhir
         f"&= {latex(hasil_akhir)}"
     ]
+    # --- AKHIR PERBAIKAN ---
     
+    # Membersihkan langkah duplikat jika ada
     unique_steps = []
     if calc_steps:
         unique_steps.append(calc_steps[0])
@@ -265,7 +272,6 @@ def _solve_rasionalisasi(f, x, point):
 
     calculation_latex = "\\begin{aligned}" + " \\\\ ".join(unique_steps) + "\\end{aligned}"
     return explanation_text, calculation_latex
-
 
 def _solve_trigonometri(f, x, point):
     # (Kode ini disalin dari file Anda untuk kelengkapan)
