@@ -1,7 +1,8 @@
 import random
 import uuid
 import math
-from sympy import sympify, limit, oo, Symbol, latex, sqrt, sin, cos, tan, expand
+from sympy import sympify, limit, oo, Symbol, latex, sqrt, sin, cos, tan, expand, pi, S, Rational, sec, csc, cot
+from fractions import Fraction
 
 # --- Helper Functions ---
 
@@ -844,29 +845,132 @@ def _gen_rasionalisasi_level_9_fallback():
     }
 
 # ... (sisa file tidak perlu diubah) ...
+# Pastikan import di bagian atas file Anda sudah lengkap:
+# from sympy import ..., Symbol, sec, csc, cot, S, pi, Rational
+
 def _gen_trigonometri(level):
+    """
+    FINAL REVISION v2: Mencakup Level 10, 11, 12.
+    FIX: Agresif mengurangi dominasi lim x->0 di Level 10 untuk variasi maksimal.
+    """
     x = Symbol('x')
-    a = random.randint(2, 9)
-    b = random.randint(2, 9)
     
-    if level <= 10:
-        func = random.choice([sin, tan])
-        f = func(a*x) / (b*x)
-        gen_type = 'trigonometri_sederhana'
-    elif level == 11:
-        f = sin(a*x) / tan(b*x)
-        gen_type = 'trigonometri_tan'
-    else:
-        f = (1 - cos(a*x)) / x**2
-        gen_type = 'trigonometri_cos'
-        
-    ans = limit(f, x, 0)
-    
-    return {
-        "latex": rf"\lim_{{x \to 0}} {latex(f)}",
-        "answer": str(ans),
-        "params": {"type": gen_type, "f_str": str(f), "point": 0}
-    }
+    try:
+        if level == 12:
+            # --- LOGIKA LEVEL 12 (TETAP SEMPURNA) ---
+            pattern = random.choice([
+                'one_minus_sec', 'csc_minus_cot', 'simple_camouflage',
+                'tan_plus_sin_over_sin3'
+            ])
+            a = random.randint(2, 12); b = random.randint(2, 12); c = random.randint(2, 12)
+            f = None
+            use_zero_limit = random.random() < 0.2
+            point = S.Zero
+            if not use_zero_limit:
+                point_choices = [
+                    S(1), S(-1), S(2), S(-2), S(3), S(-3), S(4), S(-4),
+                    pi, -pi, pi/2, -pi/2, pi/3, -pi/3, pi/4, -pi/4, S(2)*pi, S(-2)*pi
+                ]
+                point = random.choice(point_choices)
+            var = (x - point)
+            if pattern == 'one_minus_sec':
+                f = (1 - sec(a*var)) / (b*var**2)
+            elif pattern == 'csc_minus_cot':
+                f = (csc(a*var) - cot(a*var)) / (b*var)
+            elif pattern == 'simple_camouflage':
+                camouflage_func = random.choice([sec, cos]) 
+                f = random.choice([sin, tan])(a*var) / (b*var * camouflage_func(c*var))
+            elif pattern == 'tan_plus_sin_over_sin3':
+                f = (tan(a*var) - sin(a*var)) / (b*sin(c*var)**3)
+            
+            if f is None: return _gen_trigonometri(level)
+            ans = limit(f, x, point)
+            if not ans.is_finite or not ans.is_Rational or ans == 0:
+                return _gen_trigonometri(level)
+            return {
+                "latex": rf"\lim_{{x \to {latex(point)}}} {latex(f)}",
+                "answer": f"{ans.p}/{ans.q}" if ans.q != 1 else str(ans.p),
+                "params": {"type": "trigonometri_expert", "f_str": str(f), "point": str(point)}
+            }
+
+        elif level == 11:
+            # --- LOGIKA LEVEL 11 (TETAP SEMPURNA) ---
+            pattern = random.choice(['one_minus_cos', 'cos_minus_cos'])
+            a = random.randint(2, 12); b = random.randint(2, 12); c = random.randint(2, 12)
+            while a == b: b = random.randint(2, 12)
+            f = None
+            use_zero_limit = random.random() < 0.3
+            point = S.Zero
+            if not use_zero_limit:
+                point_choices = [S(1), S(-1), S(2), -pi, pi/2, -pi/2, pi/3]
+                point = random.choice(point_choices)
+            var = (x - point)
+            if pattern == 'one_minus_cos':
+                den_type = random.choice(['x_squared', 'sin_squared', 'tan_squared'])
+                if den_type == 'x_squared': f = (1 - cos(a*var)) / (b*var**2)
+                elif den_type == 'sin_squared': f = (1 - cos(a*var)) / (b*sin(c*var)**2)
+                else: f = (1 - cos(a*var)) / (b*tan(c*var)**2)
+            elif pattern == 'cos_minus_cos':
+                f = (cos(a*var) - cos(b*var)) / (c*var**2)
+            if f is None: return _gen_trigonometri(level)
+            ans = limit(f, x, point)
+            if not ans.is_finite or not ans.is_Rational: return _gen_trigonometri(level)
+            return {
+                "latex": rf"\lim_{{x \to {latex(point)}}} {latex(f)}",
+                "answer": f"{ans.p}/{ans.q}" if ans.q != 1 else str(ans.p),
+                "params": {"type": "trigonometri_lanjutan", "f_str": str(f), "point": str(point)}
+            }
+            
+        else: # Level 10
+            # --- LOGIKA LEVEL 10 DENGAN VARIASI MAKSIMAL ---
+            a = random.randint(1, 15)
+            b = random.randint(1, 15)
+            while a == b:
+                b = random.randint(1, 15)
+            
+            f = None
+            
+            # --- PERUBAHAN UTAMA: Probabilitas x->0 dikurangi menjadi 20% ---
+            use_zero_limit = random.random() < 0.2
+            
+            point = S.Zero
+            if not use_zero_limit:
+                # Daftar titik limit diperluas untuk variasi maksimal
+                point_choices = [
+                    S(1), S(-1), S(2), S(-2), S(3), S(-3), S(4), S(-4), S(5), S(-5), S(10),
+                    pi, -pi, pi/2, -pi/2, pi/3, -pi/3, S(2)*pi
+                ]
+                point = random.choice(point_choices)
+            
+            var = (x - point)
+            pattern = random.choice(['func_over_x', 'x_over_func', 'func_over_func'])
+            func1 = random.choice([sin, tan])
+            func2 = random.choice([sin, tan])
+
+            if pattern == 'func_over_x':
+                f = func1(a * var) / (b * var)
+            elif pattern == 'x_over_func':
+                f = (a * var) / func1(b * var)
+            else: # func_over_func
+                f = func1(a * var) / func2(b * var)
+
+            params = {'a': a, 'b': b, "type": "trigonometri"}
+            params["f_str"] = str(f)
+            params["point"] = str(point)
+            
+            if f is None: return _gen_trigonometri(level)
+            ans = limit(f, x, point)
+            if not ans.is_finite or not ans.is_Rational:
+                return _gen_trigonometri(level)
+                
+            return {
+                "latex": rf"\lim_{{x \to {latex(point)}}} {latex(f)}",
+                "answer": f"{ans.p}/{ans.q}" if ans.q != 1 else str(ans.p),
+                "params": params
+            }
+
+    except Exception:
+        return _gen_trigonometri(level)
 
 def _gen_tak_hingga(level):
     x = Symbol('x')
