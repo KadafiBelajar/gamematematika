@@ -177,43 +177,153 @@ def _solve_faktorisasi(f, x, point):
 
 def _solve_rasionalisasi(f, x, point):
     """
-    Menghasilkan langkah pengerjaan rasionalisasi yang sederhana, stabil, dan andal.
+    Menghasilkan langkah pengerjaan rasionalisasi yang sistematis.
+    Mengikuti pola: Limit → Kalikan Sekawan → Ekspansi → Faktorisasi → Coret → Substitusi → Hasil
     """
+    from sympy import sqrt, expand, factor, cancel, simplify
+    
     explanation_text = r"Hasil substitusi langsung adalah bentuk tak tentu $\frac{0}{0}$. Kita akan menggunakan metode rasionalisasi dengan mengalikan dengan bentuk sekawan."
+    
     num, den = f.as_numer_denom()
-    
-    target_expr, is_num_target, conjugate = None, False, None
-    if 'sqrt' in str(num): target_expr, is_num_target = num, True
-    elif 'sqrt' in str(den): target_expr = den
-    else: return "Error: Tidak ditemukan bentuk akar.", ""
-    
-    terms = target_expr.as_ordered_terms()
-    if len(terms) == 2: conjugate = terms[0] - terms[1]
-    else: return "Error: Gagal memproses bentuk sekawan.", ""
-    
     calc_steps = []
-
-    # Langkah 1: Kalikan dengan sekawan
-    calc_steps.append(rf"\lim_{{x \to {point}}} {latex(f)} &= \lim_{{x \to {point}}} \left( {latex(f)} \right) \cdot \frac{{{latex(conjugate)}}}{{{latex(conjugate)}}}")
-
-    # Langkah 2: Langsung ke bentuk sederhana setelah dicoret
-    full_expr = f * (conjugate/conjugate)
-    f_canceled = cancel(full_expr)
-    calc_steps.append(rf"&= \lim_{{x \to {point}}} {latex(f_canceled)}")
-
-    # Langkah 3: Lakukan substitusi
-    calc_steps.append(f"&= {latex(f_canceled).replace('x', f'({latex(point)})')}")
-
-    # Langkah 4: Tampilkan hasil akhir
-    hasil_akhir = limit(f, x, point)
-    calc_steps.append(f"&= {latex(hasil_akhir)}")
     
+    # Identifikasi bagian yang mengandung akar
+    target_expr, conjugate = None, None
+    
+    if 'sqrt' in str(num):
+        target_expr = num
+    elif 'sqrt' in str(den):
+        target_expr = den
+    else:
+        return "Error: Tidak ditemukan bentuk akar.", ""
+    
+    # Buat bentuk sekawan
+    terms = target_expr.as_ordered_terms()
+    if len(terms) == 2:
+        conjugate = terms[0] - terms[1]
+    else:
+        return "Error: Gagal memproses bentuk sekawan.", ""
+    
+    point_latex = latex(sympify(point))
+    
+    # LANGKAH 1: Limit awal
+    calc_steps.append(
+        rf"\lim_{{x \to {point_latex}}} {latex(f)}"
+    )
+    
+    # LANGKAH 2: Kalikan dengan sekawan (tampilkan dalam bentuk perkalian)
+    calc_steps.append(
+        rf"&= \lim_{{x \to {point_latex}}} \left( {latex(f)} \right) \cdot \frac{{{latex(conjugate)}}}{{{latex(conjugate)}}}"
+    )
+    
+    # LANGKAH 3: Hasil perkalian menggunakan (a-b)(a+b) = a²-b²
+    # Hitung pembilang dan penyebut baru
+    new_num = expand(num * conjugate)
+    new_den = expand(den * conjugate)
+    
+    calc_steps.append(
+        rf"&= \lim_{{x \to {point_latex}}} \frac{{{latex(new_num)}}}{{{latex(new_den)}}}"
+    )
+    
+    # LANGKAH 4: Faktorisasi (jika memungkinkan)
+    num_factored = factor(new_num)
+    den_factored = factor(new_den)
+    
+    # Cek apakah ada perubahan setelah faktorisasi
+    if latex(num_factored) != latex(new_num) or latex(den_factored) != latex(new_den):
+        calc_steps.append(
+            rf"&= \lim_{{x \to {point_latex}}} \frac{{{latex(num_factored)}}}{{{latex(den_factored)}}}"
+        )
+    
+    # LANGKAH 5: Coret faktor yang sama
+    f_canceled = cancel(num_factored / den_factored)
+    
+    # Cek apakah ada pembatalan
+    if latex(f_canceled) != latex(num_factored / den_factored):
+        calc_steps.append(
+            rf"&= \lim_{{x \to {point_latex}}} {latex(f_canceled)}"
+        )
+    
+    # LANGKAH 6: Substitusi nilai x (dengan tanda kurung)
+    num_final, den_final = f_canceled.as_numer_denom()
+    
+    # Ganti x dengan nilai point dalam tanda kurung
+    num_substituted = latex(num_final).replace(str(x), f'({point_latex})')
+    
+    if den_final != 1:
+        den_substituted = latex(den_final).replace(str(x), f'({point_latex})')
+        calc_steps.append(
+            rf"&= \frac{{{num_substituted}}}{{{den_substituted}}}"
+        )
+    else:
+        calc_steps.append(
+            f"&= {num_substituted}"
+        )
+    
+    # LANGKAH 7: Evaluasi perhitungan dalam akar
+    num_eval = num_final.subs(x, point)
+    den_eval = den_final.subs(x, point)
+    
+    # Cek apakah masih ada akar yang bisa dievaluasi
+    if 'sqrt' in latex(num_eval) or 'sqrt' in latex(den_eval):
+        if den_eval != 1:
+            calc_steps.append(
+                rf"&= \frac{{{latex(num_eval)}}}{{{latex(den_eval)}}}"
+            )
+        else:
+            calc_steps.append(
+                f"&= {latex(num_eval)}"
+            )
+    
+    # LANGKAH 8: Hitung nilai akar
+    num_sqrt_eval = num_eval
+    den_sqrt_eval = den_eval
+    
+    # Evaluasi akar jika ada
+    try:
+        if 'sqrt' in str(num_eval):
+            num_sqrt_eval = num_eval.evalf()
+            num_sqrt_eval = sympify(num_sqrt_eval) if num_sqrt_eval == int(num_sqrt_eval) else num_eval
+        
+        if 'sqrt' in str(den_eval):
+            den_sqrt_eval = den_eval.evalf()
+            den_sqrt_eval = sympify(den_sqrt_eval) if den_sqrt_eval == int(den_sqrt_eval) else den_eval
+        
+        if den_sqrt_eval != 1 and (latex(num_sqrt_eval) != latex(num_eval) or latex(den_sqrt_eval) != latex(den_eval)):
+            calc_steps.append(
+                rf"&= \frac{{{latex(num_sqrt_eval)}}}{{{latex(den_sqrt_eval)}}}"
+            )
+        elif den_sqrt_eval == 1 and latex(num_sqrt_eval) != latex(num_eval):
+            calc_steps.append(
+                f"&= {latex(num_sqrt_eval)}"
+            )
+    except:
+        pass
+    
+    # LANGKAH 9: Hasil akhir
+    hasil_akhir = limit(f, x, point)
+    last_value = calc_steps[-1].split('=')[-1].strip()
+    
+    if latex(hasil_akhir) not in last_value:
+        calc_steps.append(
+            f"&= {latex(hasil_akhir)}"
+        )
+    
+    # Hilangkan langkah duplikat
     unique_steps = [calc_steps[0]]
     for step in calc_steps[1:]:
-        if unique_steps[-1].split('&=')[-1].strip() != step.split('&=')[-1].strip():
+        current_rhs = step.split('&=')[-1].strip() if '&=' in step else step.strip()
+        previous_rhs = unique_steps[-1].split('&=')[-1].strip() if '&=' in unique_steps[-1] else unique_steps[-1].strip()
+        
+        # Normalisasi untuk perbandingan
+        current_clean = current_rhs.replace(' ', '').replace('\\left', '').replace('\\right', '')
+        previous_clean = previous_rhs.replace(' ', '').replace('\\left', '').replace('\\right', '')
+        
+        if current_clean != previous_clean:
             unique_steps.append(step)
-
-    calculation_latex = "\\begin{aligned}" + " \\\\ ".join(unique_steps) + "\\end{aligned}"
+    
+    calculation_latex = "\\begin{aligned}\n" + " \\\\ \n".join(unique_steps) + "\n\\end{aligned}"
+    
     return explanation_text, calculation_latex
 
 def _solve_trigonometri(f, x, point):
