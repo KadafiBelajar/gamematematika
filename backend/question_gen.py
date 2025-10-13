@@ -61,8 +61,7 @@ def _gen_substitusi(level):
             
             # Pastikan penyebut tidak nol pada titik limit
             while den_a * point + den_b == 0:
-                point = random.randint(-3, 3)
-                den_b = random.randint(1, 5)
+                point = random.randint(-3, 3) # Cari titik baru jika penyebut nol
                 
             num_a, num_b = random.randint(1, 5), random.randint(-5, 5)
             
@@ -70,8 +69,8 @@ def _gen_substitusi(level):
             num = num_a * x + num_b
             den = den_a * x + den_b
             
-            # Cek apakah fungsi menyederhanakan menjadi konstanta
-            # Jika tidak, keluar dari loop
+            # Cek apakah fungsi menyederhanakan menjadi konstanta.
+            # Jika tidak, baru keluar dari loop.
             if not (num/den).is_constant(x):
                 f = num / den
                 break
