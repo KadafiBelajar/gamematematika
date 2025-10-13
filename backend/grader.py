@@ -15,30 +15,74 @@ def _solve_substitusi_rasional(f, x, point, num, den):
     """
     Fungsi KHUSUS untuk menghasilkan langkah pengerjaan
     substitusi langsung pada FUNGSI RASIONAL (PECAHAN).
+    VERSI FINAL DENGAN ALGORITMA YANG LOGIS DAN STABIL.
     """
+    
+    # Helper function untuk menggabungkan suku-suku LaTeX
+    def join_latex_terms(terms_list):
+        result = ""
+        for i, term_str in enumerate(terms_list):
+            term_str = term_str.strip()
+            is_neg = term_str.startswith('-')
+            if i == 0:
+                result = term_str
+            else:
+                result += f" - {term_str[1:]}" if is_neg else f" + {term_str}"
+        return result
+
     calc_steps = []
+    
     den_val_at_point = den.subs(x, point)
     if den_val_at_point == 0:
         return ("Substitusi langsung menghasilkan penyebut nol. Metode lain mungkin diperlukan.", "")
 
     explanation_text = f"Karena ini adalah fungsi rasional dan nilai penyebut tidak nol saat x mendekati {point}, kita bisa menggunakan metode substitusi langsung."
     
-    # Langkah 1: Substitusi
-    num_sub_display = sympify(str(num).replace('x', f"({point})"))
-    den_sub_display = sympify(str(den).replace('x', f"({point})"))
-    calc_steps.append(rf"\lim_{{x \to {point}}} {latex(f)} &= \frac{{{latex(num_sub_display)}}}{{\latex(den_sub_display)}}")
+    # Pecah pembilang dan penyebut menjadi daftar suku-suku
+    num_terms = num.as_ordered_terms()
+    den_terms = den.as_ordered_terms()
+    point_latex = latex(sympify(point))
+    
+    # --- Langkah 1: Substitusi (dengan tanda kurung dan urutan yang benar) ---
+    num_sub_latex_list = [latex(term).replace('x', f"({point_latex})") for term in num_terms]
+    den_sub_latex_list = [latex(term).replace('x', f"({point_latex})") for term in den_terms]
+    
+    num_display_sub = join_latex_terms(num_sub_latex_list)
+    den_display_sub = join_latex_terms(den_sub_latex_list)
+    
+    step1_rhs = f"\\frac{{{num_display_sub}}}{{{den_display_sub}}}"
+    calc_steps.append(rf"\lim_{{x \to {point}}} {latex(f)} &= {step1_rhs}")
+    last_rhs = step1_rhs
+    
+    # --- Langkah 2: Evaluasi Perkalian di dalam pembilang & penyebut ---
+    has_multiplication = any('*' in str(term) for term in num_terms) or any('*' in str(term) for term in den_terms)
+    if has_multiplication:
+        num_mul_latex_list = [latex(term.subs(x, point)) for term in num_terms]
+        den_mul_latex_list = [latex(term.subs(x, point)) for term in den_terms]
 
-    # Langkah 2: Hitung pembilang dan penyebut
+        num_display_mul = join_latex_terms(num_mul_latex_list)
+        den_display_mul = join_latex_terms(den_mul_latex_list)
+        
+        step2_rhs = f"\\frac{{{num_display_mul}}}{{{den_display_mul}}}"
+        if step2_rhs != last_rhs:
+            calc_steps.append(f"&= {step2_rhs}")
+            last_rhs = step2_rhs
+        
+    # --- Langkah 3: Evaluasi Penjumlahan/Pengurangan ---
     num_evaluated = num.subs(x, point)
     den_evaluated = den.subs(x, point)
-    if latex(num_evaluated) != latex(num_sub_display) or latex(den_evaluated) != latex(den_sub_display):
-        calc_steps.append(rf"&= \frac{{{latex(num_evaluated)}}}{{\latex(den_evaluated)}}")
-
-    # Langkah 3: Hasil akhir
+    
+    step3_rhs = f"\\frac{{{latex(num_evaluated)}}}{{{latex(den_evaluated)}}}"
+    if step3_rhs != last_rhs:
+        calc_steps.append(f"&= {step3_rhs}")
+        last_rhs = step3_rhs
+        
+    # --- Langkah 4: Hasil Akhir ---
     hasil_akhir = limit(f, x, point)
-    if latex(hasil_akhir) != latex(num_evaluated/den_evaluated):
-         calc_steps.append(f"&= {latex(hasil_akhir)}")
-
+    if latex(hasil_akhir) != last_rhs.replace("\\", ""):
+        calc_steps.append(f"&= {latex(hasil_akhir)}")
+        
+    # Finalisasi
     unique_steps = [calc_steps[0]]
     for step in calc_steps[1:]:
         if unique_steps[-1].split('&=')[-1].strip() != step.split('&=')[-1].strip():
