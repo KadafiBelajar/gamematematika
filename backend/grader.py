@@ -1,6 +1,6 @@
 from sympy import (
     sympify, limit, Symbol, sqrt, factor, cancel, expand, latex, oo,
-    sin, cos, tan, Poly, degree, numer, denom, Add, Mul, Pow
+    sin, cos, tan, Poly, degree, numer, denom, Add, Mul, Pow, S
 )
 
 def check_answer(user_answer, correct_answer):
@@ -8,113 +8,62 @@ def check_answer(user_answer, correct_answer):
     return user_answer.strip() == str(correct_answer).strip()
 
 # ==============================================================================
-# FUNGSI-FUNGSI PEMBANTU UNTUK SETIAP TIPE SOAL
+# FUNGSI-FUNGSI PEMBANTU
 # ==============================================================================
 
 def _solve_substitusi_rasional(f, x, point, num, den):
     """
     Fungsi KHUSUS untuk menghasilkan langkah pengerjaan
     substitusi langsung pada FUNGSI RASIONAL (PECAHAN).
-    VERSI DETAIL DENGAN LANGKAH PEMDAS LENGKAP.
     """
-    
-    # Helper function untuk menggabungkan suku-suku LaTeX
-    def join_latex_terms(terms_list):
-        result = ""
-        for i, term_str in enumerate(terms_list):
-            term_str = term_str.strip()
-            is_neg = term_str.startswith('-')
-            if i == 0:
-                result = term_str
-            else:
-                result += f" - {term_str[1:]}" if is_neg else f" + {term_str}"
-        return result
-
     calc_steps = []
-    
     den_val_at_point = den.subs(x, point)
     if den_val_at_point == 0:
         return ("Substitusi langsung menghasilkan penyebut nol. Metode lain mungkin diperlukan.", "")
 
     explanation_text = f"Karena ini adalah fungsi rasional dan nilai penyebut tidak nol saat x mendekati {point}, kita bisa menggunakan metode substitusi langsung."
     
-    # Pecah pembilang dan penyebut menjadi daftar suku-suku
-    num_terms = num.as_ordered_terms()
-    den_terms = den.as_ordered_terms()
-    point_latex = latex(sympify(point))
-    
-    # --- Langkah 1: Substitusi (dengan tanda kurung dan urutan yang benar) ---
-    num_sub_latex_list = [latex(term).replace('x', f"({point_latex})") for term in num_terms]
-    den_sub_latex_list = [latex(term).replace('x', f"({point_latex})") for term in den_terms]
-    
-    num_display_sub = join_latex_terms(num_sub_latex_list)
-    den_display_sub = join_latex_terms(den_sub_latex_list)
-    
-    step1_rhs = f"\\frac{{{num_display_sub}}}{{{den_display_sub}}}"
-    calc_steps.append(rf"\lim_{{x \to {point}}} {latex(f)} &= {step1_rhs}")
-    last_rhs = step1_rhs
-    
-    # --- Langkah 2: Evaluasi Perkalian di dalam pembilang & penyebut ---
-    # Cek apakah ada perkalian yang perlu dilakukan
-    has_multiplication = any('*' in str(term) for term in num_terms) or any('*' in str(term) for term in den_terms)
-    if has_multiplication:
-        num_mul_latex_list = [latex(term.subs(x, point)) for term in num_terms]
-        den_mul_latex_list = [latex(term.subs(x, point)) for term in den_terms]
+    # Langkah 1: Substitusi
+    num_sub_display = sympify(str(num).replace('x', f"({point})"))
+    den_sub_display = sympify(str(den).replace('x', f"({point})"))
+    calc_steps.append(rf"\lim_{{x \to {point}}} {latex(f)} &= \frac{{{latex(num_sub_display)}}}{{\latex(den_sub_display)}}")
 
-        num_display_mul = join_latex_terms(num_mul_latex_list)
-        den_display_mul = join_latex_terms(den_mul_latex_list)
-        
-        step2_rhs = f"\\frac{{{num_display_mul}}}{{{den_display_mul}}}"
-        if step2_rhs != last_rhs:
-            calc_steps.append(f"&= {step2_rhs}")
-            last_rhs = step2_rhs
-        
-    # --- Langkah 3: Evaluasi Penjumlahan/Pengurangan ---
+    # Langkah 2: Hitung pembilang dan penyebut
     num_evaluated = num.subs(x, point)
     den_evaluated = den.subs(x, point)
-    
-    step3_rhs = f"\\frac{{{latex(num_evaluated)}}}{{{latex(den_evaluated)}}}"
-    if step3_rhs != last_rhs:
-        calc_steps.append(f"&= {step3_rhs}")
-        last_rhs = step3_rhs
-        
-    # --- Langkah 4: Hasil Akhir ---
+    if latex(num_evaluated) != latex(num_sub_display) or latex(den_evaluated) != latex(den_sub_display):
+        calc_steps.append(rf"&= \frac{{{latex(num_evaluated)}}}{{\latex(den_evaluated)}}")
+
+    # Langkah 3: Hasil akhir
     hasil_akhir = limit(f, x, point)
-    if latex(hasil_akhir) != last_rhs.replace("\\", ""):
-        calc_steps.append(f"&= {latex(hasil_akhir)}")
-        
-    # Finalisasi
-    unique_steps = []
-    if calc_steps:
-        unique_steps.append(calc_steps[0])
-        for i in range(1, len(calc_steps)):
-            prev_rhs = unique_steps[-1].split('&=')[-1].strip()
-            current_rhs = calc_steps[i].split('&=')[-1].strip()
-            if prev_rhs != current_rhs:
-                unique_steps.append(calc_steps[i])
+    if latex(hasil_akhir) != latex(num_evaluated/den_evaluated):
+         calc_steps.append(f"&= {latex(hasil_akhir)}")
+
+    unique_steps = [calc_steps[0]]
+    for step in calc_steps[1:]:
+        if unique_steps[-1].split('&=')[-1].strip() != step.split('&=')[-1].strip():
+            unique_steps.append(step)
     
     calculation_latex = "\\begin{aligned}" + " \\\\ ".join(unique_steps) + "\\end{aligned}"
     return explanation_text, calculation_latex
 
 def _solve_substitusi(f, x, point):
     """
-    Memilih metode penyelesaian substitusi yang tepat
-    berdasarkan bentuk fungsi (polinomial atau rasional).
+    Dispatcher untuk metode substitusi (polinomial atau rasional).
     """
     num, den = f.as_numer_denom()
 
     if den != 1:
         return _solve_substitusi_rasional(f, x, point, num, den)
     else:
+        # Logika untuk Polinomial (sudah benar)
         def join_latex_terms(terms_list):
             result = ""
             for i, term_str in enumerate(terms_list):
                 term_str = term_str.strip()
                 is_neg = term_str.startswith('-')
-                if i == 0:
-                    result = term_str
-                else:
-                    result += f" - {term_str[1:]}" if is_neg else f" + {term_str}"
+                if i == 0: result = term_str
+                else: result += f" - {term_str[1:]}" if is_neg else f" + {term_str}"
             return result
 
         explanation_text = "Karena ini adalah fungsi polinomial yang kontinu, kita bisa langsung menemukan nilainya dengan metode substitusi langsung:"
@@ -149,160 +98,92 @@ def _solve_substitusi(f, x, point):
         if latex(hasil_akhir) != last_display:
             calc_steps.append(f"&= {latex(hasil_akhir)}")
 
-        unique_steps = []
-        if calc_steps:
-            unique_steps.append(calc_steps[0])
-            for i in range(1, len(calc_steps)):
-                prev_rhs = unique_steps[-1].split('&=')[-1].strip()
-                current_rhs = calc_steps[i].split('&=')[-1].strip()
-                if prev_rhs != current_rhs:
-                    unique_steps.append(calc_steps[i])
+        unique_steps = [calc_steps[0]]
+        for i in range(1, len(calc_steps)):
+            if unique_steps[-1].split('&=')[-1].strip() != calc_steps[i].split('&=')[-1].strip():
+                unique_steps.append(calc_steps[i])
         
         calculation_latex = "\\begin{aligned}" + " \\\\ ".join(unique_steps) + "\\end{aligned}"
         return explanation_text, calculation_latex
 
 def _solve_faktorisasi(f, x, point):
-    """Menghasilkan langkah-langkah untuk metode faktorisasi."""
+    """
+    Menghasilkan langkah-langkah untuk metode faktorisasi yang detail.
+    """
     explanation_text = r"Substitusi langsung pada fungsi ini menghasilkan bentuk tak tentu $\frac{0}{0}$. Oleh karena itu, kita perlu menyederhanakan fungsi menggunakan metode faktorisasi:"
     num, den = f.as_numer_denom()
-    num_factored = factor(num)
-    den_factored = factor(den)
+    num_factored, den_factored = factor(num), factor(den)
     f_canceled = cancel(f)
     hasil_akhir = limit(f, x, point)
     
-    # --- PERBAIKAN DIMULAI DI SINI ---
-    
-    # Membuat string LaTeX secara aman
-    num_factored_latex = latex(num_factored)
-    den_factored_latex = latex(den_factored)
-    
-    # Membuat daftar langkah pengerjaan yang baru dan lebih detail
     calc_steps = [
-        # Langkah 1: Tampilkan faktorisasi (tanpa 'lim' di sisi kanan)
-        rf"\lim_{{x \to {point}}} {latex(f)} &= \frac{{{num_factored_latex}}}{{{den_factored_latex}}}",
-        
-        # Langkah 2: Tampilkan fungsi setelah disederhanakan/dicoret (tanpa 'lim')
+        rf"\lim_{{x \to {point}}} {latex(f)} &= \frac{{{latex(num_factored)}}}{{{latex(den_factored)}}}",
         rf"&= {latex(f_canceled)}",
-        
-        # Langkah 3: Tampilkan proses substitusi (LANGKAH BARU)
         f"&= {latex(f_canceled).replace('x', f'({point})')}",
-        
-        # Langkah 4: Tampilkan Hasil Akhir
         f"&= {latex(hasil_akhir)}"
     ]
     
-    # Membersihkan jika ada langkah yang hasilnya identik
-    unique_steps = []
-    if calc_steps:
-        unique_steps.append(calc_steps[0])
-        for i in range(1, len(calc_steps)):
-            prev_rhs = unique_steps[-1].split('&=')[-1].strip()
-            current_rhs = calc_steps[i].split('&=')[-1].strip()
-            if prev_rhs != current_rhs:
-                unique_steps.append(calc_steps[i])
+    unique_steps = [calc_steps[0]]
+    for step in calc_steps[1:]:
+        if unique_steps[-1].split('&=')[-1].strip() != step.split('&=')[-1].strip():
+            unique_steps.append(step)
 
-    # Menggabungkan semua langkah
     calculation_latex = "\\begin{aligned}" + " \\\\ ".join(unique_steps) + "\\end{aligned}"
     return explanation_text, calculation_latex
 
 def _solve_rasionalisasi(f, x, point):
-    """Menghasilkan langkah-langkah untuk metode rasionalisasi."""
+    """
+    Menghasilkan langkah pengerjaan rasionalisasi yang sederhana, stabil, dan andal.
+    """
     explanation_text = r"Hasil substitusi langsung adalah bentuk tak tentu $\frac{0}{0}$. Kita akan menggunakan metode rasionalisasi dengan mengalikan dengan bentuk sekawan."
     num, den = f.as_numer_denom()
     
-    target_expr = None
-    is_num_target = False
+    target_expr, is_num_target, conjugate = None, False, None
+    if 'sqrt' in str(num): target_expr, is_num_target = num, True
+    elif 'sqrt' in str(den): target_expr = den
+    else: return "Error: Tidak ditemukan bentuk akar.", ""
     
-    if 'sqrt' in str(num):
-        target_expr = num
-        is_num_target = True
-    elif 'sqrt' in str(den):
-        target_expr = den
-        is_num_target = False
-    else:
-        return "Error: Tidak ditemukan bentuk akar untuk dirasionalisasi.", ""
-
     terms = target_expr.as_ordered_terms()
-    if len(terms) == 2:
-        conjugate = terms[0] - terms[1]
-    else:
-        return "Error: Gagal memproses bentuk sekawan.", ""
+    if len(terms) == 2: conjugate = terms[0] - terms[1]
+    else: return "Error: Gagal memproses bentuk sekawan.", ""
+    
+    calc_steps = []
 
-    if is_num_target:
-        num_rationalized = expand(num * conjugate)
-        rationalized_display = rf"\frac{{{latex(num_rationalized)}}}{{\left({latex(den)}\right)\left({latex(conjugate)}\right)}}"
-        f_rationalized = num_rationalized / (den * conjugate)
-    else: 
-        den_rationalized = expand(den * conjugate)
-        rationalized_display = rf"\frac{{\left({latex(num)}\right)\left({latex(conjugate)}\right)}}{{{latex(den_rationalized)}}}"
-        f_rationalized = (num * conjugate) / den_rationalized
+    # Langkah 1: Kalikan dengan sekawan
+    calc_steps.append(rf"\lim_{{x \to {point}}} {latex(f)} &= \lim_{{x \to {point}}} \left( {latex(f)} \right) \cdot \frac{{{latex(conjugate)}}}{{{latex(conjugate)}}}")
 
-    f_canceled = cancel(f_rationalized)
+    # Langkah 2: Langsung ke bentuk sederhana setelah dicoret
+    full_expr = f * (conjugate/conjugate)
+    f_canceled = cancel(full_expr)
+    calc_steps.append(rf"&= \lim_{{x \to {point}}} {latex(f_canceled)}")
+
+    # Langkah 3: Lakukan substitusi
+    calc_steps.append(f"&= {latex(f_canceled).replace('x', f'({latex(point)})')}")
+
+    # Langkah 4: Tampilkan hasil akhir
     hasil_akhir = limit(f, x, point)
+    calc_steps.append(f"&= {latex(hasil_akhir)}")
     
-    # --- PERBAIKAN DIMULAI DI SINI ---
-    # Daftar langkah pengerjaan yang disempurnakan
-    calc_steps = [
-        # Langkah 1: Kalikan dengan sekawan/sekawan
-        rf"\lim_{{x \to {point}}} {latex(f)} &= \lim_{{x \to {point}}} \left( {latex(f)} \right) \cdot \frac{{{latex(conjugate)}}}{{{latex(conjugate)}}}",
-        
-        # Langkah 2: Tampilkan hasil perkalian sekawan
-        rf"&= \lim_{{x \to {point}}} {rationalized_display}",
-        
-        # Langkah 3: Tampilkan setelah disederhanakan/dicoret
-        rf"&= \lim_{{x \to {point}}} {latex(f_canceled)}",
-        
-        # Langkah 4: Tampilkan proses substitusi (LANGKAH BARU)
-        f"&= {latex(f_canceled).replace('x', f'({point})')}",
-        
-        # Langkah 5: Tampilkan Hasil Akhir
-        f"&= {latex(hasil_akhir)}"
-    ]
-    # --- AKHIR PERBAIKAN ---
-    
-    # Membersihkan langkah duplikat jika ada
-    unique_steps = []
-    if calc_steps:
-        unique_steps.append(calc_steps[0])
-        for i in range(1, len(calc_steps)):
-            prev_rhs = unique_steps[-1].split('&=')[-1].strip()
-            current_rhs = calc_steps[i].split('&=')[-1].strip()
-            if prev_rhs != current_rhs:
-                unique_steps.append(calc_steps[i])
+    unique_steps = [calc_steps[0]]
+    for step in calc_steps[1:]:
+        if unique_steps[-1].split('&=')[-1].strip() != step.split('&=')[-1].strip():
+            unique_steps.append(step)
 
     calculation_latex = "\\begin{aligned}" + " \\\\ ".join(unique_steps) + "\\end{aligned}"
     return explanation_text, calculation_latex
 
 def _solve_trigonometri(f, x, point):
-    # (Kode ini disalin dari file Anda untuk kelengkapan)
-    explanation_text = r"Untuk limit trigonometri menuju 0, kita gunakan sifat-sifat khusus."
+    explanation_text = r"Penyelesaian untuk limit trigonometri."
     hasil_akhir = limit(f, x, point)
     calc_steps = [rf"\lim_{{x \to {point}}} {latex(f)}", f"&= {latex(hasil_akhir)}"]
     calculation_latex = "\\begin{aligned}" + " \\\\ ".join(calc_steps) + "\\end{aligned}"
     return explanation_text, calculation_latex
 
-
 def _solve_tak_hingga(f, x):
-    # (Kode ini disalin dari file Anda untuk kelengkapan)
-    explanation_text = r"Untuk limit menuju tak hingga, ..."
-    # ... (sisa fungsi tidak diubah)
-    num, den = f.as_numer_denom()
-    deg_num, deg_den = degree(Poly(num, x)), degree(Poly(den, x))
-    highest_power_term = x**deg_den
-    new_num, new_den = expand(num / highest_power_term), expand(den / highest_power_term)
-    f_divided = new_num / new_den
+    explanation_text = r"Penyelesaian untuk limit tak hingga."
     hasil_akhir = limit(f, x, oo)
-    calc_steps = [
-        rf"\lim_{{x \to \infty}} {latex(f)} &= \lim_{{x \to \infty}} \frac{{\frac{{{latex(num)}}}{{{latex(highest_power_term)}}}}}{{\frac{{{latex(den)}}}{{{latex(highest_power_term)}}}}}",
-        rf"&= \lim_{{x \to \infty}} {latex(f_divided)}"]
-    if latex(hasil_akhir) not in calc_steps[-1]: calc_steps.append(f"&= {latex(hasil_akhir)}")
-    unique_steps = []
-    if calc_steps:
-        unique_steps.append(calc_steps[0])
-        for i in range(1, len(calc_steps)):
-            if unique_steps[-1].split('&=')[-1].strip() != calc_steps[i].split('&=')[-1].strip():
-                unique_steps.append(calc_steps[i])
-    calculation_latex = "\\begin{aligned}" + " \\\\ ".join(unique_steps) + "\\end{aligned}"
+    calc_steps = [rf"\lim_{{x \to \infty}} {latex(f)}", f"&= {latex(hasil_akhir)}"]
+    calculation_latex = "\\begin{aligned}" + " \\\\ ".join(calc_steps) + "\\end{aligned}"
     return explanation_text, calculation_latex
 
 # ==============================================================================
@@ -310,12 +191,9 @@ def _solve_tak_hingga(f, x):
 # ==============================================================================
 
 def generate_limit_explanation(params):
-    """
-    Menghasilkan penjelasan dan blok kalkulasi LaTeX untuk soal limit.
-    """
     problem_type = params.get('type')
     if not problem_type:
-        return "Error: 'type' tidak ditemukan dalam parameter.", ""
+        return "Error: 'type' tidak ditemukan.", ""
 
     x = Symbol('x')
     f = sympify(params['f_str'])
