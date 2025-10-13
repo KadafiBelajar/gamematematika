@@ -206,40 +206,63 @@ def _solve_faktorisasi(f, x, point):
     return explanation_text, calculation_latex
 
 def _solve_rasionalisasi(f, x, point):
-    # (Kode ini disalin dari file Anda untuk kelengkapan)
-    explanation_text = r"Hasil substitusi langsung adalah bentuk tak tentu $\frac{0}{0}$. ..."
-    # ... (sisa fungsi tidak diubah)
+    """Menghasilkan langkah-langkah untuk metode rasionalisasi."""
+    explanation_text = r"Hasil substitusi langsung adalah bentuk tak tentu $\frac{0}{0}$. Kita akan menggunakan metode rasionalisasi dengan mengalikan dengan bentuk sekawan."
     num, den = f.as_numer_denom()
+    
     target_expr = None
-    if any(isinstance(arg, Pow) and arg.exp == 1/2 for arg in Add.make_args(num)): target_expr = num
-    elif any(isinstance(arg, Pow) and arg.exp == 1/2 for arg in Add.make_args(den)): target_expr = den
-    else: return "Error...", ""
-    term_with_sqrt, other_term = None, None
-    for arg in target_expr.as_ordered_terms():
-        if 'sqrt' in str(arg) or (isinstance(arg, Pow) and arg.exp == 1/2): term_with_sqrt = arg
-        else: other_term = arg
-    if term_with_sqrt is None or other_term is None: return "Error...", ""
-    conjugate = -other_term + term_with_sqrt
-    if target_expr is num:
-        num_rationalized = expand(num * conjugate)
-        f_rationalized_display = rf"\frac{{{latex(num_rationalized)}}}{{\left({latex(den)}\right)\left({latex(conjugate)}\right)}}"
-        f_rationalized = num_rationalized / (den * conjugate)
+    is_num_target = False
+    
+    if 'sqrt' in str(num):
+        target_expr = num
+        is_num_target = True
+    elif 'sqrt' in str(den):
+        target_expr = den
+        is_num_target = False
     else:
+        return "Error: Tidak ditemukan bentuk akar untuk dirasionalisasi.", ""
+
+    # --- PERBAIKAN LOGIKA PENCARIAN SEKAWAN ---
+    # Logika baru yang lebih sederhana dan sesuai standar:
+    # Jika ekspresi adalah (A + B), maka sekawannya adalah (A - B).
+    terms = target_expr.as_ordered_terms()
+    if len(terms) == 2:
+        # Balik tanda suku kedua
+        conjugate = terms[0] - terms[1]
+    else:
+        # Fallback jika logika gagal (seharusnya tidak terjadi untuk soal level ini)
+        return "Error: Gagal memproses bentuk sekawan.", ""
+    # --- AKHIR PERBAIKAN ---
+
+    if is_num_target:
+        num_rationalized = expand(num * conjugate)
+        rationalized_display = rf"\frac{{{latex(num_rationalized)}}}{{\left({latex(den)}\right)\left({latex(conjugate)}\right)}}"
+        f_rationalized = num_rationalized / (den * conjugate)
+    else: 
         den_rationalized = expand(den * conjugate)
-        f_rationalized_display = rf"\frac{{\left({latex(num)}\right)\left({latex(conjugate)}\right)}}{{{latex(den_rationalized)}}}"
+        rationalized_display = rf"\frac{{\left({latex(num)}\right)\left({latex(conjugate)}\right)}}{{{latex(den_rationalized)}}}"
         f_rationalized = (num * conjugate) / den_rationalized
+
     f_canceled = cancel(f_rationalized)
     hasil_akhir = limit(f, x, point)
+    
     calc_steps = [
         rf"\lim_{{x \to {point}}} {latex(f)} &= \lim_{{x \to {point}}} \left( {latex(f)} \right) \cdot \frac{{{latex(conjugate)}}}{{{latex(conjugate)}}}",
-        rf"&= \lim_{{x \to {point}}} {f_rationalized_display}", rf"&= \lim_{{x \to {point}}} {latex(f_canceled)}",
-        f"&= {latex(f_canceled.subs(x, point))}", f"&= {latex(hasil_akhir)}"]
+        rf"&= \lim_{{x \to {point}}} {rationalized_display}",
+        rf"&= \lim_{{x \to {point}}} {latex(f_canceled)}",
+        f"&= {latex(f_canceled.subs(x, point))}",
+        f"&= {latex(hasil_akhir)}"
+    ]
+    
     unique_steps = []
     if calc_steps:
         unique_steps.append(calc_steps[0])
         for i in range(1, len(calc_steps)):
-            if unique_steps[-1].split('&=')[-1].strip() != calc_steps[i].split('&=')[-1].strip():
+            prev_rhs = unique_steps[-1].split('&=')[-1].strip()
+            current_rhs = calc_steps[i].split('&=')[-1].strip()
+            if prev_rhs != current_rhs:
                 unique_steps.append(calc_steps[i])
+
     calculation_latex = "\\begin{aligned}" + " \\\\ ".join(unique_steps) + "\\end{aligned}"
     return explanation_text, calculation_latex
 
