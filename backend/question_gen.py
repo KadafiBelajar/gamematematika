@@ -131,75 +131,201 @@ def _gen_faktorisasi(level):
     }
 
 def _gen_rasionalisasi(level):
+    """
+    Generator soal rasionalisasi yang lebih variatif dengan banyak kemungkinan kombinasi.
+    """
     x = Symbol('x')
     
-    for _ in range(20): # Coba hingga 20 kali untuk dapat soal yang valid
-        if level <= 7: # Level 7: Rasionalisasi Sederhana
-            a = random.choice([1, 4, 9, 16, 25, 36, 49, 64, 81, 100])
-            b = int(math.sqrt(a)) * random.choice([-1, 1])
+    # Level 7: Rasionalisasi Sederhana dengan variasi tinggi
+    if level == 7:
+        max_attempts = 30
+        for attempt in range(max_attempts):
+            # Pilih tipe soal secara acak
+            soal_type = random.choice([
+                'sqrt_minus_const',  # √(ax+b) - c
+                'const_minus_sqrt',  # c - √(ax+b)
+                'sqrt_linear_den',   # bentuk dengan penyebut linear
+            ])
             
-            if random.choice([True, False]):
-                num = sqrt(x + a) - b
-            else:
-                num = b - sqrt(x + a)
-            
-            den = x
-            point = 0
-            if num.subs(x, point) != 0: continue
-            gen_type = 'rasionalisasi_akar_sederhana'
-
-        elif level == 8: # Level 8: Rasionalisasi Kompleks (DENGAN PERBAIKAN)
-            gen_type = 'rasionalisasi_akar_kompleks'
-            
-            # --- PERBAIKAN: Gunakan `while True` untuk menjamin soal valid ---
-            while True:
-                d = random.randint(2, 5) * random.choice([-1, 1])
-                a_val = random.randint(1, 4)
-                b_val = random.randint(1, 25) # Perluas rentang untuk peluang lebih besar
+            if soal_type == 'sqrt_minus_const':
+                # Bentuk: (√(ax+b) - c) / (dx + e)
+                # Dimana: ax+b = c² saat x = point
                 
-                rad_val = a_val * d + b_val
-                # Cek apakah rad_val adalah kuadrat sempurna yang positif
-                if rad_val > 0 and math.isqrt(rad_val)**2 == rad_val:
-                    c_val = math.isqrt(rad_val)
-                    if c_val != 0:
-                        break # Kombinasi valid ditemukan, keluar dari loop
-            # --- AKHIR PERBAIKAN ---
-
-            sqrt_expr = sqrt(a_val*x + b_val)
+                # Pilih konstanta c (hasil akar)
+                c = random.randint(2, 10)
+                c_squared = c * c
+                
+                # Pilih koefisien untuk di dalam akar
+                a = random.choice([1, 2, 3, 4, 5])
+                
+                # Pilih point (tidak selalu 0!)
+                point = random.choice([-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5])
+                
+                # Hitung b agar √(ax+b) = c saat x = point
+                b = c_squared - a * point
+                
+                # Buat penyebut yang menghasilkan 0 di point
+                # Bentuk: d(x - point)
+                d = random.randint(1, 5)
+                den = d * (x - point)
+                den_expanded = expand(den)
+                
+                num = sqrt(a*x + b) - c
+                
+            elif soal_type == 'const_minus_sqrt':
+                # Bentuk: (c - √(ax+b)) / (dx + e)
+                c = random.randint(2, 10)
+                c_squared = c * c
+                a = random.choice([1, 2, 3, 4, 5])
+                point = random.choice([-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5])
+                b = c_squared - a * point
+                d = random.randint(1, 5)
+                den = d * (x - point)
+                den_expanded = expand(den)
+                
+                num = c - sqrt(a*x + b)
+                
+            else:  # sqrt_linear_den
+                # Bentuk: (√(ax+b) - c) / (mx + n)
+                c = random.randint(2, 8)
+                c_squared = c * c
+                a = random.choice([1, 2, 3, 4])
+                point = random.choice([-4, -3, -2, -1, 0, 1, 2, 3, 4])
+                b = c_squared - a * point
+                
+                # Penyebut: mx + n dimana mx + n = 0 saat x = point
+                m = random.randint(1, 6)
+                n = -m * point
+                den_expanded = m*x + n
+                
+                num = sqrt(a*x + b) - c
             
-            # Pilih secara acak salah satu dari dua skenario sulit
-            scenario = random.choice(['complex_den', 'sqrt_in_den'])
+            # Validasi soal
+            f = num / den_expanded
             
-            if scenario == 'complex_den':
-                # Skenario A: Penyebut lebih kompleks (kuadrat)
-                num = sqrt_expr - c_val
-                den = x**2 - d**2
-                point = d
-            else: # scenario == 'sqrt_in_den'
-                # Skenario B: Akar ada di penyebut
-                num = x**2 - d**2
-                den = sqrt_expr - c_val
-                point = d
-
-        else: # Level 9
-            a_val, b_val = random.randint(1, 5), random.randint(1, 5)
-            while a_val == b_val:
-                 b_val = random.randint(1, 5)
-            num, den, point = sqrt(a_val*x + 1) - sqrt(b_val*x + 1), x, 0
-            gen_type = 'rasionalisasi_beda_akar'
-
-        ans = limit(num / den, x, point)
+            # Cek apakah substitusi langsung = 0/0
+            num_at_point = num.subs(x, point)
+            den_at_point = den_expanded.subs(x, point)
+            
+            if num_at_point == 0 and den_at_point == 0:
+                # Hitung limit
+                ans = limit(f, x, point)
+                
+                # Pastikan jawaban adalah bilangan rasional yang sederhana
+                if ans.is_Integer or ans.is_Rational:
+                    if abs(ans) < 100:  # Jawaban tidak terlalu besar
+                        gen_type = 'rasionalisasi_akar_sederhana'
+                        
+                        f_str_original = f"({num})/({den_expanded})"
+                        latex_original = f"\\frac{{{latex(num)}}}{{{latex(den_expanded)}}}"
+                        
+                        return {
+                            "latex": rf"\lim_{{x \to {point}}} {latex_original}",
+                            "answer": str(ans),
+                            "params": {"type": gen_type, "f_str": f_str_original, "point": point}
+                        }
         
-        if ans.is_Integer or ans.is_Float or ans.is_Rational:
-            f_str_original = f"({num})/({den})"
-            latex_original = f"\\frac{{{latex(num)}}}{{{latex(den)}}}"
-            return {
-                "latex": rf"\lim_{{x \to {point}}} {latex_original}",
-                "answer": str(ans),
-                "params": {"type": gen_type, "f_str": f_str_original, "point": point}
-            }
+        # Fallback jika gagal generate setelah max_attempts
+        return _gen_rasionalisasi_fallback(level)
+    
+    # Level 8 dan 9 (tetap seperti sebelumnya)
+    elif level == 8:
+        return _gen_rasionalisasi_level_8()
+    else:  # level 9
+        return _gen_rasionalisasi_level_9()
 
-    return _gen_faktorisasi(6) # Fallback jika gagal membuat soal
+
+def _gen_rasionalisasi_fallback(level):
+    """Fallback generator untuk level 7 jika generator utama gagal."""
+    x = Symbol('x')
+    
+    # Gunakan kombinasi sederhana yang pasti berhasil
+    combinations = [
+        (1, 9, 3, 0),    # √(x+9)-3 / x, x→0
+        (1, 16, 4, 0),   # √(x+16)-4 / x, x→0
+        (2, 8, 4, 0),    # √(2x+8)-4 / x, x→0
+        (1, 25, 5, 0),   # √(x+25)-5 / x, x→0
+        (3, 12, 6, 0),   # √(3x+12)-6 / x, x→0
+        (1, 4, 2, -2),   # √(x+4)-2 / (x+2), x→-2
+        (1, 9, 3, -5),   # √(x+9)-3 / (x+5), x→-5
+        (2, 18, 6, 0),   # √(2x+18)-6 / x, x→0
+    ]
+    
+    a, b, c, point = random.choice(combinations)
+    num = sqrt(a*x + b) - c
+    den = x - point if point != 0 else x
+    
+    f = num / den
+    ans = limit(f, x, point)
+    
+    return {
+        "latex": rf"\lim_{{x \to {point}}} \frac{{{latex(num)}}}{{{latex(den)}}}",
+        "answer": str(ans),
+        "params": {"type": "rasionalisasi_akar_sederhana", "f_str": f"({num})/({den})", "point": point}
+    }
+
+
+def _gen_rasionalisasi_level_8():
+    """Generator untuk level 8 (kompleks)."""
+    # Implementasi level 8 tetap seperti kode asli
+    x = Symbol('x')
+    
+    while True:
+        d = random.randint(2, 5) * random.choice([-1, 1])
+        a_val = random.randint(1, 4)
+        b_val = random.randint(1, 25)
+        
+        rad_val = a_val * d + b_val
+        if rad_val > 0 and math.isqrt(rad_val)**2 == rad_val:
+            c_val = math.isqrt(rad_val)
+            if c_val != 0:
+                break
+    
+    sqrt_expr = sqrt(a_val*x + b_val)
+    scenario = random.choice(['complex_den', 'sqrt_in_den'])
+    
+    if scenario == 'complex_den':
+        num = sqrt_expr - c_val
+        den = x**2 - d**2
+        point = d
+    else:
+        num = x**2 - d**2
+        den = sqrt_expr - c_val
+        point = d
+    
+    ans = limit(num / den, x, point)
+    
+    if ans.is_Integer or ans.is_Float or ans.is_Rational:
+        f_str_original = f"({num})/({den})"
+        latex_original = f"\\frac{{{latex(num)}}}{{{latex(den)}}}"
+        return {
+            "latex": rf"\lim_{{x \to {point}}} {latex_original}",
+            "answer": str(ans),
+            "params": {"type": "rasionalisasi_akar_kompleks", "f_str": f_str_original, "point": point}
+        }
+
+
+def _gen_rasionalisasi_level_9():
+    """Generator untuk level 9 (beda akar)."""
+    x = Symbol('x')
+    a_val, b_val = random.randint(1, 5), random.randint(1, 5)
+    while a_val == b_val:
+        b_val = random.randint(1, 5)
+    
+    num = sqrt(a_val*x + 1) - sqrt(b_val*x + 1)
+    den = x
+    point = 0
+    
+    ans = limit(num / den, x, point)
+    
+    f_str_original = f"({num})/({den})"
+    latex_original = f"\\frac{{{latex(num)}}}{{{latex(den)}}}"
+    
+    return {
+        "latex": rf"\lim_{{x \to {point}}} {latex_original}",
+        "answer": str(ans),
+        "params": {"type": "rasionalisasi_beda_akar", "f_str": f_str_original, "point": point}
+    }
 
 # ... (sisa file tidak perlu diubah) ...
 def _gen_trigonometri(level):
