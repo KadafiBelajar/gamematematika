@@ -326,6 +326,253 @@ def _solve_rasionalisasi(f, x, point):
     
     return explanation_text, calculation_latex
 
+def _solve_rasionalisasi_beda_akar(f, x, point):
+    """
+    Fungsi KHUSUS untuk rasionalisasi yang melibatkan beda/jumlah dua akar.
+    Bentuk: (√(ax+b) ± √(cx+d) [± k]) / penyebut
+    
+    Metode: Rasionalisasi bertahap atau rasionalisasi ganda.
+    """
+    from sympy import sqrt, expand, factor, cancel, simplify
+    
+    explanation_text = r"Hasil substitusi langsung adalah bentuk tak tentu $\frac{0}{0}$. Kita akan menggunakan metode rasionalisasi dengan mengalikan dengan bentuk sekawan."
+    
+    num, den = f.as_numer_denom()
+    calc_steps = []
+    
+    point_latex = latex(sympify(point))
+    
+    # LANGKAH 1: Limit awal
+    calc_steps.append(
+        rf"\lim_{{x \to {point_latex}}} {latex(f)}"
+    )
+    
+    # Identifikasi semua suku yang mengandung akar di pembilang
+    num_terms = num.as_ordered_terms()
+    sqrt_terms = [term for term in num_terms if 'sqrt' in str(term)]
+    const_terms = [term for term in num_terms if 'sqrt' not in str(term)]
+    
+    # STRATEGI RASIONALISASI BERGANTUNG PADA JUMLAH AKAR
+    
+    if len(sqrt_terms) == 2:
+        # Kasus: √(ax+b) ± √(cx+d) [± k]
+        sqrt1 = sqrt_terms[0]
+        sqrt2 = sqrt_terms[1]
+        
+        # Cek tanda: jika keduanya positif (dijumlahkan) atau salah satu negatif (dikurangkan)
+        # Untuk √a + √b - k atau √a - √b
+        
+        # Buat bentuk sekawan untuk SELURUH PEMBILANG
+        # Jika bentuknya: (√a + √b - k), sekawan: (√a + √b + k)
+        # Jika bentuknya: (√a - √b), sekawan: (√a + √b)
+        
+        if len(const_terms) > 0:
+            # Ada konstanta: bentuk (√a + √b - k)
+            const_val = sum(const_terms)
+            # Sekawan: ganti tanda konstanta
+            conjugate = sqrt1 + sqrt2 + (-const_val)
+        else:
+            # Tidak ada konstanta: bentuk (√a - √b) atau (√a + √b)
+            # Cek tanda sqrt2
+            if str(sqrt2).startswith('-'):
+                # Bentuk: √a - √b, sekawan: √a + √b
+                conjugate = sqrt1 - sqrt2
+            else:
+                # Bentuk: √a + √b, sekawan: √a - √b (jarang terjadi untuk bentuk 0/0)
+                conjugate = sqrt1 - sqrt2
+        
+        # LANGKAH 2: Kalikan dengan sekawan
+        calc_steps.append(
+            rf"&= \lim_{{x \to {point_latex}}} \left( {latex(f)} \right) \cdot \frac{{{latex(conjugate)}}}{{{latex(conjugate)}}}"
+        )
+        
+        # LANGKAH 3: Hasil perkalian (ekspansi)
+        new_num = expand(num * conjugate)
+        new_den = expand(den * conjugate)
+        
+        calc_steps.append(
+            rf"&= \lim_{{x \to {point_latex}}} \frac{{{latex(new_num)}}}{{{latex(new_den)}}}"
+        )
+        
+        # LANGKAH 4: Faktorisasi
+        num_factored = factor(new_num)
+        den_factored = factor(new_den)
+        
+        if latex(num_factored) != latex(new_num) or latex(den_factored) != latex(new_den):
+            calc_steps.append(
+                rf"&= \lim_{{x \to {point_latex}}} \frac{{{latex(num_factored)}}}{{{latex(den_factored)}}}"
+            )
+        
+        # LANGKAH 5: Pembatalan
+        f_canceled = cancel(num_factored / den_factored)
+        
+        if latex(f_canceled) != latex(num_factored / den_factored):
+            calc_steps.append(
+                rf"&= \lim_{{x \to {point_latex}}} {latex(f_canceled)}"
+            )
+        
+        # LANGKAH 6: Substitusi
+        num_final, den_final = f_canceled.as_numer_denom()
+        num_substituted = latex(num_final).replace(str(x), f'({point_latex})')
+        
+        if den_final != 1:
+            den_substituted = latex(den_final).replace(str(x), f'({point_latex})')
+            calc_steps.append(
+                rf"&= \frac{{{num_substituted}}}{{{den_substituted}}}"
+            )
+        else:
+            calc_steps.append(
+                f"&= {num_substituted}"
+            )
+        
+        # LANGKAH 7: Evaluasi akar
+        num_eval = num_final.subs(x, point)
+        den_eval = den_final.subs(x, point)
+        
+        if 'sqrt' in latex(num_eval) or 'sqrt' in latex(den_eval):
+            if den_eval != 1:
+                calc_steps.append(
+                    rf"&= \frac{{{latex(num_eval)}}}{{{latex(den_eval)}}}"
+                )
+            else:
+                calc_steps.append(
+                    f"&= {latex(num_eval)}"
+                )
+        
+        # LANGKAH 8: Hitung nilai akar
+        try:
+            if 'sqrt' in str(num_eval):
+                num_sqrt_eval = simplify(num_eval)
+            else:
+                num_sqrt_eval = num_eval
+                
+            if 'sqrt' in str(den_eval):
+                den_sqrt_eval = simplify(den_eval)
+            else:
+                den_sqrt_eval = den_eval
+            
+            if den_sqrt_eval != 1 and (latex(num_sqrt_eval) != latex(num_eval) or latex(den_sqrt_eval) != latex(den_eval)):
+                calc_steps.append(
+                    rf"&= \frac{{{latex(num_sqrt_eval)}}}{{{latex(den_sqrt_eval)}}}"
+                )
+            elif den_sqrt_eval == 1 and latex(num_sqrt_eval) != latex(num_eval):
+                calc_steps.append(
+                    f"&= {latex(num_sqrt_eval)}"
+                )
+        except:
+            pass
+        
+        # LANGKAH 9: Hasil akhir
+        hasil_akhir = limit(f, x, point)
+        last_value = calc_steps[-1].split('=')[-1].strip()
+        
+        if latex(hasil_akhir) not in last_value:
+            calc_steps.append(
+                f"&= {latex(hasil_akhir)}"
+            )
+    
+    elif len(sqrt_terms) == 1:
+        # Kasus: Hanya satu akar (√(ax+b) - k)
+        # Gunakan metode rasionalisasi biasa
+        sqrt_term = sqrt_terms[0]
+        const_val = sum(const_terms) if const_terms else 0
+        conjugate = sqrt_term + (-const_val)
+        
+        # Sama seperti di atas...
+        calc_steps.append(
+            rf"&= \lim_{{x \to {point_latex}}} \left( {latex(f)} \right) \cdot \frac{{{latex(conjugate)}}}{{{latex(conjugate)}}}"
+        )
+        
+        new_num = expand(num * conjugate)
+        new_den = expand(den * conjugate)
+        
+        calc_steps.append(
+            rf"&= \lim_{{x \to {point_latex}}} \frac{{{latex(new_num)}}}{{{latex(new_den)}}}"
+        )
+        
+        num_factored = factor(new_num)
+        den_factored = factor(new_den)
+        
+        if latex(num_factored) != latex(new_num) or latex(den_factored) != latex(new_den):
+            calc_steps.append(
+                rf"&= \lim_{{x \to {point_latex}}} \frac{{{latex(num_factored)}}}{{{latex(den_factored)}}}"
+            )
+        
+        f_canceled = cancel(num_factored / den_factored)
+        
+        if latex(f_canceled) != latex(num_factored / den_factored):
+            calc_steps.append(
+                rf"&= \lim_{{x \to {point_latex}}} {latex(f_canceled)}"
+            )
+        
+        num_final, den_final = f_canceled.as_numer_denom()
+        num_substituted = latex(num_final).replace(str(x), f'({point_latex})')
+        
+        if den_final != 1:
+            den_substituted = latex(den_final).replace(str(x), f'({point_latex})')
+            calc_steps.append(
+                rf"&= \frac{{{num_substituted}}}{{{den_substituted}}}"
+            )
+        else:
+            calc_steps.append(
+                f"&= {num_substituted}"
+            )
+        
+        num_eval = num_final.subs(x, point)
+        den_eval = den_final.subs(x, point)
+        
+        if 'sqrt' in latex(num_eval) or 'sqrt' in latex(den_eval):
+            if den_eval != 1:
+                calc_steps.append(
+                    rf"&= \frac{{{latex(num_eval)}}}{{{latex(den_eval)}}}"
+                )
+            else:
+                calc_steps.append(
+                    f"&= {latex(num_eval)}"
+                )
+        
+        try:
+            num_sqrt_eval = simplify(num_eval) if 'sqrt' in str(num_eval) else num_eval
+            den_sqrt_eval = simplify(den_eval) if 'sqrt' in str(den_eval) else den_eval
+            
+            if den_sqrt_eval != 1 and (latex(num_sqrt_eval) != latex(num_eval) or latex(den_sqrt_eval) != latex(den_eval)):
+                calc_steps.append(
+                    rf"&= \frac{{{latex(num_sqrt_eval)}}}{{{latex(den_sqrt_eval)}}}"
+                )
+            elif den_sqrt_eval == 1 and latex(num_sqrt_eval) != latex(num_eval):
+                calc_steps.append(
+                    f"&= {latex(num_sqrt_eval)}"
+                )
+        except:
+            pass
+        
+        hasil_akhir = limit(f, x, point)
+        last_value = calc_steps[-1].split('=')[-1].strip()
+        
+        if latex(hasil_akhir) not in last_value:
+            calc_steps.append(
+                f"&= {latex(hasil_akhir)}"
+            )
+    
+    else:
+        return "Error: Bentuk tidak dikenali.", ""
+    
+    # Hilangkan duplikat
+    unique_steps = [calc_steps[0]]
+    for step in calc_steps[1:]:
+        current_rhs = step.split('&=')[-1].strip() if '&=' in step else step.strip()
+        previous_rhs = unique_steps[-1].split('&=')[-1].strip() if '&=' in unique_steps[-1] else unique_steps[-1].strip()
+        
+        current_clean = current_rhs.replace(' ', '').replace('\\left', '').replace('\\right', '')
+        previous_clean = previous_rhs.replace(' ', '').replace('\\left', '').replace('\\right', '')
+        
+        if current_clean != previous_clean:
+            unique_steps.append(step)
+    
+    calculation_latex = "\\begin{aligned}\n" + " \\\\ \n".join(unique_steps) + "\n\\end{aligned}"
+    
+    return explanation_text, calculation_latex
+
 def _solve_trigonometri(f, x, point):
     explanation_text = r"Penyelesaian untuk limit trigonometri."
     hasil_akhir = limit(f, x, point)
@@ -358,7 +605,11 @@ def generate_limit_explanation(params):
         return _solve_substitusi(f, x, point)
     elif 'faktorisasi' in problem_type:
         return _solve_faktorisasi(f, x, point)
+    elif 'rasionalisasi_beda_akar' in problem_type:
+        # ROUTING KHUSUS untuk level 9 (beda akar)
+        return _solve_rasionalisasi_beda_akar(f, x, point)
     elif 'rasionalisasi' in problem_type:
+        # Level 7 dan 8 (rasionalisasi biasa)
         return _solve_rasionalisasi(f, x, point)
     elif 'trigonometri' in problem_type:
         return _solve_trigonometri(f, x, point)
