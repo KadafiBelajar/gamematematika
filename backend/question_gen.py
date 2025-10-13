@@ -5,39 +5,366 @@ from sympy import sympify, limit, oo, Symbol, latex, sqrt, sin, cos, tan, expand
 
 # --- Helper Functions ---
 
-def _generate_options(correct_answer):
+def _generate_options(correct_answer, params=None):
     """
-    Membuat 3 pilihan jawaban salah yang masuk akal di sekitar jawaban benar.
+    Membuat 3 pilihan jawaban salah yang berasal dari kesalahan umum dalam perhitungan.
+    Semua jawaban dalam bentuk PECAHAN atau BILANGAN BULAT, TIDAK ADA DESIMAL.
+    Menambahkan bilangan bulat pengecoh yang strategis.
     """
-    options = {str(correct_answer)}
+    from sympy import sympify, sqrt, limit, Symbol, simplify, Rational, nsimplify, fraction
+    from fractions import Fraction
+    import random
+    
+    options = set()
+    
+    # Konversi jawaban benar ke bentuk pecahan jika belum
+    try:
+        correct_sympy = sympify(correct_answer)
+        
+        # Jika desimal, konversi ke pecahan
+        if '.' in str(correct_answer):
+            correct_fraction = nsimplify(correct_sympy, rational=True)
+            correct_answer = str(correct_fraction)
+            correct_sympy = correct_fraction
+        
+        options.add(str(correct_answer))
+        correct_value = float(correct_sympy)
+    except:
+        options.add(str(correct_answer))
+        correct_value = 0
+    
+    problem_type = params.get('type', '') if params else ''
+    x = Symbol('x')
+    
+    # Fungsi helper untuk membuat pecahan yang cantik
+    def make_fraction(numerator, denominator):
+        """Membuat pecahan dalam bentuk string yang sederhana."""
+        if denominator == 1:
+            return str(int(numerator))
+        if denominator == 0:
+            return "tak terdefinisi"
+        
+        # Sederhanakan pecahan
+        from math import gcd
+        g = gcd(int(abs(numerator)), int(abs(denominator)))
+        num = int(numerator / g)
+        den = int(denominator / g)
+        
+        # Pastikan tanda negatif di pembilang
+        if den < 0:
+            num = -num
+            den = -den
+        
+        if den == 1:
+            return str(num)
+        return f"{num}/{den}"
+    
+    # Fungsi untuk ekstrak pembilang dan penyebut dari jawaban benar
+    def extract_fraction(value_str):
+        """Ekstrak pembilang dan penyebut dari string pecahan atau desimal."""
+        try:
+            if '/' in value_str:
+                parts = value_str.split('/')
+                return int(parts[0]), int(parts[1])
+            else:
+                val = float(sympify(value_str))
+                frac = Fraction(val).limit_denominator(100)
+                return frac.numerator, frac.denominator
+        except:
+            return 1, 1
+    
+    correct_num, correct_den = extract_fraction(str(correct_answer))
     
     try:
-        correct_float = float(sympify(correct_answer))
-        candidates = {
-            str(int(-correct_float)),
-            str(int(correct_float + random.randint(1, 5))),
-            str(int(correct_float - random.randint(1, 5))),
-            "0", "1", "tak terdefinisi"
-        }
-        candidates.discard(str(correct_answer))
-        for cand in candidates:
-            if len(options) < 4:
-                options.add(cand)
-    except (ValueError, TypeError):
+        # ========== KESALAHAN UNTUK SUBSTITUSI ==========
+        if 'substitusi' in problem_type:
+            f_str = params.get('f_str', '')
+            point = params.get('point', 0)
+            
+            try:
+                f = sympify(f_str)
+                num, den = f.as_numer_denom()
+                
+                # Kesalahan 1: Lupa tanda kurung (untuk bilangan negatif)
+                if point < 0 and den != 1:
+                    num_val = num.subs(x, point)
+                    den_val = den.subs(x, point)
+                    
+                    # Salah: anggap point tanpa kurung
+                    num_wrong = num.subs(x, -abs(point))  # Salah tanda
+                    wrong_result = simplify(num_wrong / den_val)
+                    wrong_frac = nsimplify(wrong_result, rational=True)
+                    if wrong_frac != correct_sympy:
+                        options.add(str(wrong_frac))
+                
+                # Kesalahan 2: Pembilang/penyebut terbalik
+                if den != 1:
+                    inverted = make_fraction(correct_den, correct_num)
+                    if inverted != str(correct_answer):
+                        options.add(inverted)
+                
+                # Kesalahan 3: Salah tanda
+                negated = make_fraction(-correct_num, correct_den)
+                options.add(negated)
+                
+                # Pengecoh: Bilangan bulat yang muncul dalam soal
+                # Ambil koefisien atau konstanta dari soal
+                coeffs = [abs(int(c)) for c in [num.as_coefficients_dict().get(1, 0), 
+                                                  den.as_coefficients_dict().get(1, 0)] if c != 0]
+                if coeffs:
+                    options.add(str(random.choice(coeffs)))
+                
+            except:
+                pass
+        
+        # ========== KESALAHAN UNTUK FAKTORISASI ==========
+        elif 'faktorisasi' in problem_type:
+            f_str = params.get('f_str', '')
+            point = params.get('point', 0)
+            
+            try:
+                f = sympify(f_str)
+                num, den = f.as_numer_denom()
+                
+                # Kesalahan 1: Tidak membatalkan faktor (0/0)
+                options.add("0")
+                options.add("tak terdefinisi")
+                
+                # Kesalahan 2: Salah coret faktor
+                # Misal: (x²-9)/(x-3) dicoret jadi x-3 (salah, harusnya x+3)
+                from sympy import factor, cancel
+                num_factored = factor(num)
+                den_factored = factor(den)
+                
+                # Coba ambil faktor lain dari pembilang
+                if hasattr(num_factored, 'args') and len(num_factored.args) > 1:
+                    for arg in num_factored.args:
+                        if arg != den_factored:
+                            wrong_result = arg.subs(x, point)
+                            wrong_frac = nsimplify(wrong_result, rational=True)
+                            if abs(float(wrong_frac)) < 100:
+                                options.add(str(wrong_frac))
+                                break
+                
+                # Kesalahan 3: Salah tanda
+                negated = make_fraction(-correct_num, correct_den)
+                options.add(negated)
+                
+                # Pengecoh: Point itu sendiri atau 2*point
+                if abs(point) < 20:
+                    options.add(str(abs(point)))
+                    if abs(2*point) < 20:
+                        options.add(str(2*abs(point)))
+                
+            except:
+                pass
+        
+        # ========== KESALAHAN UNTUK RASIONALISASI ==========
+        elif 'rasionalisasi' in problem_type:
+            f_str = params.get('f_str', '')
+            point = params.get('point', 0)
+            
+            try:
+                f = sympify(f_str)
+                num, den = f.as_numer_denom()
+                
+                # Kesalahan 1: Lupa rasionalisasi
+                options.add("0")
+                options.add("tak terdefinisi")
+                
+                # Kesalahan 2: Salah rumus sekawan (a²+b² bukan a²-b²)
+                # Ini biasanya menghasilkan jawaban 2x atau 3x lipat
+                double_wrong = make_fraction(2*correct_num, correct_den)
+                options.add(double_wrong)
+                
+                # Kesalahan 3: Salah tanda akar (±)
+                negated = make_fraction(-correct_num, correct_den)
+                options.add(negated)
+                
+                # Kesalahan 4: Lupa sederhanakan
+                # Kalikan pembilang dan penyebut dengan 2, 3, atau 4
+                multiplier = random.choice([2, 3, 4])
+                unsimplified = make_fraction(correct_num * multiplier, correct_den * multiplier)
+                if unsimplified != str(correct_answer):
+                    options.add(unsimplified)
+                
+                # Kesalahan 5: Terbalik
+                inverted = make_fraction(correct_den, correct_num)
+                if inverted != str(correct_answer):
+                    options.add(inverted)
+                
+                # Pengecoh: Nilai konstanta dari dalam akar
+                # Misal: √(x+9)-3 → pengecoh: 3, 9
+                if 'sqrt' in str(num):
+                    terms = num.as_ordered_terms()
+                    for term in terms:
+                        if 'sqrt' not in str(term):
+                            const_val = abs(int(term))
+                            if 1 < const_val < 20:
+                                options.add(str(const_val))
+                                break
+                
+            except:
+                pass
+        
+        # ========== KESALAHAN UNTUK TRIGONOMETRI ==========
+        elif 'trigonometri' in problem_type:
+            # Kesalahan umum
+            options.add("0")
+            options.add("1")
+            options.add("tak terdefinisi")
+            
+            # Terbalik
+            if correct_den != 0:
+                inverted = make_fraction(correct_den, correct_num)
+                options.add(inverted)
+            
+            # Salah tanda
+            negated = make_fraction(-correct_num, correct_den)
+            options.add(negated)
+            
+            # Pengecoh: koefisien dari soal
+            # sin(ax)/bx → pengecoh: a, b
+            f_str = params.get('f_str', '')
+            # Ekstrak koefisien (misal dari sin(3x)/4x)
+            import re
+            coeffs = re.findall(r'\d+', f_str)
+            for c in coeffs[:2]:  # Ambil 2 koefisien pertama
+                if 1 < int(c) < 20:
+                    options.add(c)
+        
+        # ========== KESALAHAN UNTUK TAK HINGGA ==========
+        elif 'tak_hingga' in problem_type:
+            options.add("0")
+            options.add("1")
+            options.add("tak terdefinisi")
+            
+            # Terbalik
+            if correct_den != 0:
+                inverted = make_fraction(correct_den, correct_num)
+                options.add(inverted)
+            
+            # Salah tanda
+            negated = make_fraction(-correct_num, correct_den)
+            options.add(negated)
+            
+            # Pengecoh: koefisien utama dari pembilang atau penyebut
+            f_str = params.get('f_str', '')
+            try:
+                f = sympify(f_str)
+                num, den = f.as_numer_denom()
+                
+                # Ambil koefisien pangkat tertinggi
+                from sympy import degree, LC
+                if degree(num) > 0:
+                    leading_coeff_num = abs(int(LC(num, x)))
+                    if 1 < leading_coeff_num < 20:
+                        options.add(str(leading_coeff_num))
+                
+                if degree(den) > 0:
+                    leading_coeff_den = abs(int(LC(den, x)))
+                    if 1 < leading_coeff_den < 20:
+                        options.add(str(leading_coeff_den))
+            except:
+                pass
+        
+        # ========== TAMBAHAN KESALAHAN UMUM ==========
+        # Pastikan ada setidaknya 1-2 bilangan bulat sebagai pengecoh
+        integers_in_options = [opt for opt in options if '/' not in opt and opt.lstrip('-').isdigit()]
+        
+        if len(integers_in_options) < 2:
+            # Tambahkan bilangan bulat strategis
+            strategic_integers = []
+            
+            # 1. Nilai absolut dari pembilang atau penyebut
+            if correct_den != 1:
+                strategic_integers.append(abs(correct_num))
+                strategic_integers.append(abs(correct_den))
+            
+            # 2. Pembilang + penyebut atau pembilang - penyebut
+            if correct_den != 1:
+                strategic_integers.append(abs(correct_num + correct_den))
+                strategic_integers.append(abs(correct_num - correct_den))
+            
+            # 3. Bilangan bulat terdekat
+            if abs(correct_value) < 1:
+                strategic_integers.extend([1, 2])
+            else:
+                nearby = int(round(correct_value))
+                strategic_integers.extend([nearby, nearby + 1, nearby - 1])
+            
+            # Tambahkan 1-2 bilangan bulat
+            for num in strategic_integers:
+                if 0 < abs(num) < 20 and len(integers_in_options) < 2:
+                    options.add(str(int(num)))
+                    integers_in_options.append(str(int(num)))
+        
+        # Tambahkan beberapa variasi pecahan jika belum cukup
+        if len(options) < 8:  # Buffer untuk memilih 3 terbaik nanti
+            # Variasi 1: Tukar pembilang-penyebut
+            if correct_den != 1 and correct_num != 0:
+                options.add(make_fraction(correct_den, correct_num))
+            
+            # Variasi 2: Ganti tanda
+            options.add(make_fraction(-correct_num, correct_den))
+            
+            # Variasi 3: Kalikan/bagi dengan 2
+            options.add(make_fraction(correct_num * 2, correct_den))
+            options.add(make_fraction(correct_num, correct_den * 2))
+            
+            # Variasi 4: Tambah/kurang 1 dari pembilang
+            options.add(make_fraction(correct_num + correct_den, correct_den))
+            options.add(make_fraction(correct_num - correct_den, correct_den))
+    
+    except Exception as e:
+        print(f"Error in smart options: {e}")
         pass
-
-    while len(options) < 4:
-        try:
-            offset = random.randint(1, 5) * random.choice([-1, 1])
-            base_num = int(sympify(correct_answer))
-            options.add(str(base_num + offset))
-        except (ValueError, TypeError):
-            # Fallback jika jawaban bukan angka
-            options.add(str(random.randint(-10, 10)))
-
+    
+    # Pastikan jawaban benar ada
+    options.add(str(correct_answer))
+    
+    # Hapus jawaban yang tidak valid
+    options = {opt for opt in options if opt and opt != str(correct_answer) 
+               and 'zoo' not in opt.lower() and 'oo' not in opt.lower()}
+    
+    # Jika masih kurang, tambahkan pecahan sederhana
+    simple_fractions = ["1/2", "1/3", "1/4", "1/5", "1/6", "1/8", 
+                       "2/3", "3/4", "2/5", "3/5", 
+                       "-1/2", "-1/3", "-1/4",
+                       "1", "2", "3", "0"]
+    
+    while len(options) < 10:  # Buffer
+        frac = random.choice(simple_fractions)
+        if frac != str(correct_answer):
+            options.add(frac)
+    
+    # Pilih 3 jawaban salah terbaik (yang paling mirip/masuk akal)
     options.discard(str(correct_answer))
-    final_options = list(options)[:3] + [str(correct_answer)]
+    wrong_options = list(options)
+    
+    # Prioritaskan pilihan yang lebih masuk akal (nilai absolut tidak terlalu besar)
+    def option_score(opt):
+        """Score untuk menentukan seberapa masuk akal pilihan ini."""
+        try:
+            val = float(sympify(opt))
+            # Prioritaskan nilai yang dekat dengan jawaban benar
+            distance = abs(val - correct_value)
+            # Prioritaskan bilangan bulat dan pecahan sederhana
+            if '/' not in opt:
+                return distance  # Bilangan bulat lebih diprioritaskan
+            else:
+                return distance + 0.5  # Pecahan sedikit lebih rendah prioritasnya
+        except:
+            return 1000  # Pilihan tidak valid
+    
+    wrong_options.sort(key=option_score)
+    selected_wrong = wrong_options[:3]
+    
+    final_options = selected_wrong + [str(correct_answer)]
+    
+    # Shuffle agar jawaban benar tidak selalu di posisi yang sama
     random.shuffle(final_options)
+    
     return final_options
 
 # --- Dynamic Question Generators (dengan variasi angka yang ditingkatkan) ---
