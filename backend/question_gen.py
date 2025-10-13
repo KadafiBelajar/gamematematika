@@ -1,7 +1,7 @@
 import random
 import uuid
 import math
-from sympy import sympify, limit, oo, Symbol, latex, sqrt, sin, cos, tan
+from sympy import sympify, limit, oo, Symbol, latex, sqrt, sin, cos, tan, expand
 
 # --- Helper Functions ---
 
@@ -87,29 +87,46 @@ def _gen_substitusi(level):
 
 def _gen_faktorisasi(level):
     x = Symbol('x')
-    a = random.randint(2, 6) * random.choice([-1, 1])
+    a = random.randint(2, 5) * random.choice([-1, 1])
     
-    if level <= 4: # (x^2 - a^2) / (x - a)
-        num, den, point = x**2 - a**2, x - a, a
+    if level <= 4:
+        # Level 4: Bentuk (x^2 - a^2) / (x - a)
+        num = x**2 - a**2
+        den = x - a
+        point = a
         gen_type = 'faktorisasi_sederhana'
-    else:
-        b = random.randint(2, 6) * random.choice([-1, 1])
-        while a == b:
-            b = random.randint(2, 6) * random.choice([-1, 1])
+    else: # Level 5 dan 6
+        b = random.randint(2, 5) * random.choice([-1, 1])
+        while a == b or a == -b: # Mencegah penyederhanaan yang terlalu mudah
+            b = random.randint(2, 5) * random.choice([-1, 1])
         
-        if level == 5: # (x-a)(x-b) / (x-a)
-            num, den, point = (x - a) * (x - b), x - a, a
+        if level == 5:
+            # Level 5: Faktorisasi polinomial yang lebih sulit
+            # 1. Pembilang ditampilkan dalam bentuk yang sudah dijabarkan
+            num = expand((x - a) * (x - b))
+            
+            # 2. Penyebut memiliki koefisien yang juga perlu difaktorkan
+            c = random.choice([2, 3, 4]) 
+            den = c*x - c*a
+            
+            point = a
             gen_type = 'faktorisasi_polinomial'
-        else: # Level 6 - (x^3 - a^3) / (x-a)
-            num, den, point = x**3 - a**3, x - a, a
+        else: # Level 6
+            # Level 6: Faktorisasi kubik
+            num = x**3 - a**3
+            den = x - a
+            point = a
             gen_type = 'faktorisasi_kubik'
             
-    f = num / den
-    ans = limit(f, x, point)
+    # Bagian di bawah ini tidak perlu diubah
+    ans = limit(num / den, x, point)
+    f_str_original = f"({num})/({den})"
+    latex_original = f"\\frac{{{latex(num)}}}{{{latex(den)}}}"
+    
     return {
-        "latex": rf"\lim_{{x \to {point}}} {latex(f)}",
+        "latex": rf"\lim_{{x \to {point}}} {latex_original}",
         "answer": str(ans),
-        "params": {"type": gen_type, "f_str": str(f), "point": point}
+        "params": {"type": gen_type, "f_str": f_str_original, "point": point}
     }
 
 def _gen_rasionalisasi(level):
@@ -211,11 +228,11 @@ def generate_question_by_level(level):
     for name, (gen_func, level_range) in GENERATOR_MAP.items():
         if level in level_range:
             possible_generators.append(gen_func)
-            if level > min(level_range):
-                if name == 'faktorisasi': possible_generators.append(GENERATOR_MAP['substitusi'][0])
-                if name == 'rasionalisasi': possible_generators.append(GENERATOR_MAP['faktorisasi'][0])
-                if name == 'trigonometri': possible_generators.append(GENERATOR_MAP['rasionalisasi'][0])
-                if name == 'tak_hingga': possible_generators.append(GENERATOR_MAP['trigonometri'][0])
+            # if level > min(level_range):
+                # if name == 'faktorisasi': possible_generators.append(GENERATOR_MAP['substitusi'][0])
+                # if name == 'rasionalisasi': possible_generators.append(GENERATOR_MAP['faktorisasi'][0])
+                # if name == 'trigonometri': possible_generators.append(GENERATOR_MAP['rasionalisasi'][0])
+                # if name == 'tak_hingga': possible_generators.append(GENERATOR_MAP['trigonometri'][0])
 
     generator = random.choice(possible_generators) if possible_generators else _gen_tak_hingga
 
