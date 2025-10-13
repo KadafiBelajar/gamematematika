@@ -1,6 +1,6 @@
 from sympy import (
     sympify, limit, Symbol, sqrt, factor, cancel, expand, latex, oo,
-    sin, cos, tan, Poly, degree, numer, denom, Add, Mul, Pow, Rational, collect
+    sin, cos, tan, Poly, degree, numer, denom, Add, Mul, Pow
 )
 
 def check_answer(user_answer, correct_answer):
@@ -13,64 +13,111 @@ def check_answer(user_answer, correct_answer):
 
 def _solve_substitusi(f, x, point):
     """Menghasilkan langkah-langkah untuk metode substitusi langsung."""
+
+    # Helper function untuk menggabungkan suku-suku LaTeX dengan benar
+    def join_latex_terms(terms_list):
+        result = ""
+        for i, term in enumerate(terms_list):
+            term = term.strip()
+            is_neg = term.startswith('-')
+            if i == 0:
+                result = term
+            else:
+                if is_neg:
+                    result += f" - {term[1:]}"
+                else:
+                    result += f" + {term}"
+        return result
+
     num, den = f.as_numer_denom()
     calc_steps = []
+    explanation_text = ""
 
-    # Kasus A-2: Fungsi Rasional (Pecahan)
+    # Kasus A-2: Fungsi Rasional (Pecahan) - Tidak ada perubahan
     if den != 1:
+        # Logika untuk fungsi pecahan tetap sama
         den_val_at_point = den.subs(x, point)
         if den_val_at_point == 0:
             return ("Error: Substitusi menghasilkan penyebut nol, seharusnya ini tipe soal lain.", "")
-
-        explanation_text = f"Ini adalah fungsi rasional (pecahan). Karena nilai penyebutnya tidak nol saat $x={point}$ disubstitusikan, kita bisa menggunakan metode substitusi langsung:"
-        
-        # Langkah 1: Substitusi
+        explanation_text = f"Ini adalah fungsi rasional (pecahan)...."
         num_sub_display = sympify(str(num).replace('x', f"({point})"))
         den_sub_display = sympify(str(den).replace('x', f"({point})"))
-        calc_steps.append(rf"\lim_{{x \to {point}}} {latex(f)} &= \frac{{{latex(num_sub_display)}}}{{\latex(den_sub_display)}}\)")
-
-        # Langkah 2: Evaluasi pembilang dan penyebut
+        calc_steps.append(rf"\lim_{{x \to {point}}} {latex(f)} &= \frac{{{latex(num_sub_display)}}}{{\latex(den_sub_display)}}")
         num_evaluated = num.subs(x, point)
         den_evaluated = den.subs(x, point)
         if num_evaluated != num_sub_display or den_evaluated != den_sub_display:
-            calc_steps.append(rf"&= \frac{{{latex(num_evaluated)}}}{{\latex(den_evaluated)}}\)")
-
-        # Langkah 3: Hasil akhir
+            calc_steps.append(rf"&= \frac{{{latex(num_evaluated)}}}{{\latex(den_evaluated)}}")
         hasil_akhir = limit(f, x, point)
         if (num_evaluated / den_evaluated) != hasil_akhir:
             calc_steps.append(f"&= {latex(hasil_akhir)}")
+        # ... Akhir logika pecahan ...
 
-    # Kasus A-1: Fungsi Polinomial (Bukan Pecahan)
+    # Kasus A-1: Fungsi Polinomial (Bukan Pecahan) - LOGIKA FINAL V2
     else:
         explanation_text = "Karena ini adalah fungsi polinomial yang kontinu, kita bisa langsung menemukan nilainya dengan metode substitusi langsung:"
         
-        # Langkah 1: Substitusi nilai x
-        current_expr = sympify(str(f).replace('x', f"({point})"))
-        calc_steps.append(rf"\lim_{{x \to {point}}} {latex(f)} &= {latex(current_expr)}")
+        # --- Langkah 1: Substitusi ---
+        point_latex = latex(sympify(point))
+        str_f_latex = latex(f).replace(' - ', ' + -')
+        display_substitution = str_f_latex.replace('x', f"({point_latex})").replace('+ -', '- ')
+        
+        calc_steps.append(rf"\lim_{{x \to {point}}} {latex(f)} &= {display_substitution}")
 
-        # Langkah 2: Evaluasi pangkat
-        expr_after_pow = current_expr.replace(lambda p: p.is_Pow and p.base.is_number, lambda p: p.base ** p.exp)
+        str_f_calc = str(f).replace(' - ', ' + -')
+        str_expr = str_f_calc.replace('x', f"({point})")
+        current_expr = sympify(str_expr, evaluate=False)
+        last_latex_rhs = display_substitution
+        
+        # --- Langkah 2: Evaluasi Pangkat (Exponents) ---
+        expr_after_pow = current_expr.replace(lambda p: isinstance(p, Pow) and p.base.is_number, lambda p: p.base ** p.exp)
         if expr_after_pow != current_expr:
-            calc_steps.append(f"&= {latex(expr_after_pow)}")
+            # Fungsi untuk membuat format tampilan seperti 4(9) atau -5(2)
+            def format_pow_step(expression):
+                if isinstance(expression, Add):
+                    terms = []
+                    for arg in expression.args:
+                        if isinstance(arg, Mul) and len(arg.args) == 2:
+                            terms.append(f"{latex(arg.args[0])}({latex(arg.args[1])})")
+                        else:
+                            terms.append(latex(arg))
+                    return join_latex_terms(terms)
+                elif isinstance(expression, Mul) and len(expression.args) == 2:
+                    return f"{latex(expression.args[0])}({latex(expression.args[1])})"
+                else:
+                    return latex(expression)
+            
+            display_after_pow = format_pow_step(expr_after_pow)
+            
+            if display_after_pow != last_latex_rhs:
+                calc_steps.append(f"&= {display_after_pow}")
+                last_latex_rhs = display_after_pow
             current_expr = expr_after_pow
 
-        # Langkah 3: Evaluasi perkalian
-        if isinstance(current_expr, Add):
-            eval_args = [arg.doit() for arg in current_expr.args]
-            expr_after_mul = Add(*eval_args)
-        else:
-            expr_after_mul = current_expr.doit()
+        # --- Langkah 3: Evaluasi Perkalian (Multiplication) ---
+        # Cek apakah ada perkalian yang perlu dilakukan
+        has_multiplication = any(isinstance(arg, Mul) for arg in (current_expr.args if isinstance(current_expr, Add) else [current_expr]))
+        if has_multiplication:
+            if isinstance(current_expr, Add):
+                multiplied_terms_vals = [arg.doit() for arg in current_expr.args]
+                current_expr_after_mul = Add(*multiplied_terms_vals, evaluate=False)
+            else: # Hanya satu suku
+                multiplied_terms_vals = [current_expr.doit()]
+                current_expr_after_mul = sympify(multiplied_terms_vals[0])
 
-        if expr_after_mul != current_expr:
-            calc_steps.append(f"&= {latex(expr_after_mul, order='none')}")
-            current_expr = expr_after_mul
+            latex_terms = [latex(val) for val in multiplied_terms_vals]
+            display_after_mul = join_latex_terms(latex_terms)
 
-        # Langkah 4: Hasil akhir (penjumlahan/pengurangan)
+            if display_after_mul != last_latex_rhs:
+                calc_steps.append(f"&= {display_after_mul}")
+                last_latex_rhs = display_after_mul
+            current_expr = current_expr_after_mul
+
+        # --- Langkah 4: Hasil Akhir (Addition/Subtraction) ---
         hasil_akhir = limit(f, x, point)
-        if current_expr != hasil_akhir:
+        if latex(current_expr.doit()) != last_latex_rhs:
             calc_steps.append(f"&= {latex(hasil_akhir)}")
 
-    # Membersihkan langkah duplikat dan membangun string LaTeX
+    # Membersihkan langkah duplikat (jika ada)
     unique_steps = []
     if calc_steps:
         unique_steps.append(calc_steps[0])
@@ -80,7 +127,7 @@ def _solve_substitusi(f, x, point):
             if prev_rhs != current_rhs:
                 unique_steps.append(calc_steps[i])
     
-    calculation_latex = "\\begin{aligned}" + " \\ ".join(unique_steps) + "\\end{aligned}"
+    calculation_latex = "\\begin{aligned}" + " \\\\ ".join(unique_steps) + "\\end{aligned}"
     return explanation_text, calculation_latex
 
 def _solve_faktorisasi(f, x, point):
