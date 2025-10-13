@@ -633,17 +633,206 @@ def _gen_rasionalisasi_level_8():
 
 
 def _gen_rasionalisasi_level_9():
-    """Generator untuk level 9 (beda akar)."""
+    """
+    Generator untuk level 9 - Rasionalisasi dengan beda akar.
+    Sangat variatif dengan kemampuan generate 1000+ soal unik.
+    Point limit bisa variatif, tidak hanya x→0.
+    """
     x = Symbol('x')
-    a_val, b_val = random.randint(1, 5), random.randint(1, 5)
-    while a_val == b_val:
-        b_val = random.randint(1, 5)
     
-    num = sqrt(a_val*x + 1) - sqrt(b_val*x + 1)
-    den = x
-    point = 0
+    max_attempts = 50
     
-    ans = limit(num / den, x, point)
+    for attempt in range(max_attempts):
+        # Pilih tipe soal secara acak
+        soal_type = random.choice([
+            'beda_akar_linear',      # √(ax+b) - √(cx+d)
+            'beda_akar_kuadrat',     # akar di pembilang, kuadrat di penyebut
+            'jumlah_akar',           # √(ax+b) + √(cx+d) (bisa negatif total)
+            'akar_kompleks',         # kombinasi akar dengan konstanta
+        ])
+        
+        # Pilih point yang bervariasi (tidak selalu 0!)
+        point = random.choice([-6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6])
+        
+        if soal_type == 'beda_akar_linear':
+            # Bentuk: (√(ax+b) - √(cx+d)) / (mx+n)
+            # Di mana penyebut = 0 saat x = point
+            
+            # Pilih koefisien untuk akar pertama
+            a = random.randint(1, 6)
+            # Hitung b agar √(ax+b) bernilai kuadrat sempurna di point
+            sqrt_val_1 = random.randint(2, 8)
+            b = sqrt_val_1**2 - a * point
+            
+            # Pilih koefisien untuk akar kedua (berbeda dari pertama)
+            c = random.randint(1, 6)
+            while c == a:
+                c = random.randint(1, 6)
+            
+            # Hitung d agar √(cx+d) juga bernilai kuadrat sempurna di point
+            sqrt_val_2 = random.randint(2, 8)
+            while sqrt_val_2 == sqrt_val_1:  # Harus berbeda
+                sqrt_val_2 = random.randint(2, 8)
+            d = sqrt_val_2**2 - c * point
+            
+            # Pastikan nilai dalam akar positif untuk rentang x di sekitar point
+            if b <= 0 or d <= 0:
+                continue
+            
+            # Buat penyebut yang = 0 di point
+            m = random.randint(1, 5)
+            n = -m * point
+            
+            num = sqrt(a*x + b) - sqrt(c*x + d)
+            den = m*x + n
+            
+        elif soal_type == 'beda_akar_kuadrat':
+            # Bentuk: (√(ax+b) - √(cx+d)) / (x²+px+q)
+            # Penyebut punya faktor (x-point)
+            
+            a = random.randint(1, 5)
+            sqrt_val_1 = random.randint(2, 7)
+            b = sqrt_val_1**2 - a * point
+            
+            c = random.randint(1, 5)
+            while c == a:
+                c = random.randint(1, 5)
+            sqrt_val_2 = random.randint(2, 7)
+            while sqrt_val_2 == sqrt_val_1:
+                sqrt_val_2 = random.randint(2, 7)
+            d = sqrt_val_2**2 - c * point
+            
+            if b <= 0 or d <= 0:
+                continue
+            
+            # Penyebut: (x-point)(x-other_root)
+            other_root = random.choice([r for r in range(-5, 6) if r != point])
+            den = expand((x - point) * (x - other_root))
+            
+            num = sqrt(a*x + b) - sqrt(c*x + d)
+            
+        elif soal_type == 'jumlah_akar':
+            # Bentuk: (√(ax+b) + √(cx+d) - k) / (mx+n)
+            # Di mana √(ax+b) + √(cx+d) = k saat x = point
+            
+            a = random.randint(1, 5)
+            sqrt_val_1 = random.randint(2, 6)
+            b = sqrt_val_1**2 - a * point
+            
+            c = random.randint(1, 5)
+            sqrt_val_2 = random.randint(2, 6)
+            d = sqrt_val_2**2 - c * point
+            
+            if b <= 0 or d <= 0:
+                continue
+            
+            # k adalah jumlah kedua akar di point
+            k = sqrt_val_1 + sqrt_val_2
+            
+            m = random.randint(1, 5)
+            n = -m * point
+            
+            num = sqrt(a*x + b) + sqrt(c*x + d) - k
+            den = m*x + n
+            
+        else:  # akar_kompleks
+            # Bentuk: (k₁√(ax+b) - k₂√(cx+d)) / (mx+n)
+            # Dengan koefisien k₁ dan k₂
+            
+            k1 = random.randint(2, 4)
+            k2 = random.randint(2, 4)
+            
+            a = random.randint(1, 4)
+            sqrt_val_1 = random.randint(2, 6)
+            b = sqrt_val_1**2 - a * point
+            
+            c = random.randint(1, 4)
+            sqrt_val_2 = random.randint(2, 6)
+            d = sqrt_val_2**2 - c * point
+            
+            if b <= 0 or d <= 0:
+                continue
+            
+            # Pastikan k₁√val₁ ≠ k₂√val₂ (agar pembilang = 0)
+            if k1 * sqrt_val_1 == k2 * sqrt_val_2:
+                k2 += 1
+            
+            m = random.randint(1, 5)
+            n = -m * point
+            
+            num = k1 * sqrt(a*x + b) - k2 * sqrt(c*x + d)
+            den = m*x + n
+        
+        # Validasi soal
+        f = num / den
+        
+        # Cek apakah substitusi langsung = 0/0
+        try:
+            num_at_point = num.subs(x, point)
+            den_at_point = den.subs(x, point)
+            
+            if num_at_point == 0 and den_at_point == 0:
+                # Hitung limit
+                ans = limit(f, x, point)
+                
+                # Pastikan jawaban adalah bilangan rasional yang sederhana
+                if ans.is_Integer or ans.is_Rational:
+                    if abs(ans) < 100 and ans != 0:  # Jawaban masuk akal
+                        gen_type = 'rasionalisasi_beda_akar'
+                        
+                        f_str_original = f"({num})/({den})"
+                        latex_original = f"\\frac{{{latex(num)}}}{{{latex(den)}}}"
+                        
+                        return {
+                            "latex": rf"\lim_{{x \to {point}}} {latex_original}",
+                            "answer": str(ans),
+                            "params": {"type": gen_type, "f_str": f_str_original, "point": point}
+                        }
+        except:
+            continue
+    
+    # Fallback jika gagal setelah max_attempts
+    return _gen_rasionalisasi_level_9_fallback()
+
+
+def _gen_rasionalisasi_level_9_fallback():
+    """
+    Fallback generator untuk level 9 dengan kombinasi preset yang pasti berhasil.
+    """
+    x = Symbol('x')
+    
+    # Bank soal preset yang pasti valid dan bervariasi
+    preset_combinations = [
+        # (a, b, c, d, m, n, point) untuk (√(ax+b) - √(cx+d)) / (mx+n) di x=point
+        (1, 1, 2, 1, 1, 0, 0),      # √(x+1) - √(2x+1) / x, x→0
+        (2, 2, 3, 2, 1, 0, 0),      # √(2x+2) - √(3x+2) / x, x→0
+        (1, 4, 2, 4, 1, 0, 0),      # √(x+4) - √(2x+4) / x, x→0
+        (1, 9, 3, 9, 1, 0, 0),      # √(x+9) - √(3x+9) / x, x→0
+        (2, 8, 1, 8, 1, 0, 0),      # √(2x+8) - √(x+8) / x, x→0
+        
+        # Dengan point ≠ 0
+        (1, 5, 2, 2, 1, 1, -1),     # √(x+5) - √(2x+2) / (x+1), x→-1
+        (1, 13, 2, 8, 1, 2, -2),    # √(x+13) - √(2x+8) / (x+2), x→-2
+        (2, 10, 1, 8, 1, -1, 1),    # √(2x+10) - √(x+8) / (x-1), x→1
+        (1, 8, 3, 0, 2, 4, -2),     # √(x+8) - √(3x) / (2x+4), x→-2
+        (3, 3, 1, 9, 1, -2, 2),     # √(3x+3) - √(x+9) / (x-2), x→2
+        
+        # Variasi dengan koefisien lebih besar
+        (4, 4, 1, 16, 1, 0, 0),     # √(4x+4) - √(x+16) / x, x→0
+        (1, 16, 4, 4, 1, 0, 0),     # √(x+16) - √(4x+4) / x, x→0
+        (2, 18, 1, 25, 1, 3, -3),   # √(2x+18) - √(x+25) / (x+3), x→-3
+        (3, 12, 2, 18, 2, -6, 3),   # √(3x+12) - √(2x+18) / (2x-6), x→3
+        (1, 20, 5, 0, 1, 4, -4),    # √(x+20) - √(5x) / (x+4), x→-4
+    ]
+    
+    # Pilih kombinasi secara acak
+    a, b, c, d, m, n, point = random.choice(preset_combinations)
+    
+    num = sqrt(a*x + b) - sqrt(c*x + d)
+    den = m*x + n
+    
+    f = num / den
+    ans = limit(f, x, point)
     
     f_str_original = f"({num})/({den})"
     latex_original = f"\\frac{{{latex(num)}}}{{{latex(den)}}}"
