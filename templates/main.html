@@ -11,7 +11,22 @@
       };
     </script>
     <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" id="MathJax-script"></script>
-    <script src="{{ url_for('static', filename='main.js') }}?v=FINALFIX" defer></script>
+    <script src="{{ url_for('static', filename='main.js') }}?v=FIXEDV2" defer></script>
+    <style>
+        /* CRITICAL FIX: Pastikan overlay benar-benar tersembunyi */
+        .overlay.hidden {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+        }
+        
+        /* Overlay visible */
+        .overlay {
+            display: flex !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+    </style>
 </head>
 <body>
     <div class="fight-container" data-stage-name="{{ stage_name }}" data-level-num="{{ level_num }}">
@@ -23,7 +38,7 @@
                     <span id="player-hp-text" class="hud-hp-text">100 / 100</span>
                 </div>
                 <div class="hp-bar">
-                    <div id="player-hp-bar" class="hp-bar-inner player"></div>
+                    <div id="player-hp-bar" class="hp-bar-inner player" style="width: 100%;"></div>
                 </div>
             </div>
 
@@ -35,7 +50,7 @@
                     <span id="boss-hp-text" class="hud-hp-text">100 / 100</span>
                 </div>
                 <div class="hp-bar">
-                    <div id="boss-hp-bar" class="hp-bar-inner boss"></div>
+                    <div id="boss-hp-bar" class="hp-bar-inner boss" style="width: 100%;"></div>
                 </div>
             </div>
         </div>
@@ -49,7 +64,8 @@
             <button id="continue-btn" class="hidden">Lanjutkan</button>
         </div>
 
-        <div id="game-over-overlay" class="overlay hidden">
+        <!-- GAME OVER OVERLAY - HARUS HIDDEN BY DEFAULT -->
+        <div id="game-over-overlay" class="overlay hidden" style="display: none;">
             <div class="overlay-content">
                 <h2>Game Over</h2>
                 <button id="retry-btn">Try Again</button>
@@ -57,7 +73,8 @@
             </div>
         </div>
 
-        <div id="victory-overlay" class="overlay hidden">
+        <!-- VICTORY OVERLAY - HARUS HIDDEN BY DEFAULT -->
+        <div id="victory-overlay" class="overlay hidden" style="display: none;">
             <div class="overlay-content">
                 <h2>You Win!</h2>
                 <p>Level Cleared!</p>

@@ -98,7 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const response = await fetch(`/api/answer`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ question_id: currentQuestionId, answer: selectedAnswer, stageName, levelNum })
+            body: JSON.stringify({ question_id: currentQuestionId, answer: selectedAnswer, stage_name: stageName, level_num: levelNum })
         });
         const result = await response.json();
         
@@ -131,7 +131,8 @@ document.addEventListener('DOMContentLoaded', () => {
             ui.continueBtn.textContent = 'Beralih ke Soal Lain';
             ui.continueBtn.onclick = fetchAndDisplayQuestion;
             ui.continueBtn.classList.remove('hidden');
-            startTimer();
+            ui.submitBtn.classList.add('hidden');
+            document.querySelectorAll('.option-btn').forEach(btn => btn.disabled = true);
         }
     };
     
@@ -146,11 +147,16 @@ document.addEventListener('DOMContentLoaded', () => {
             if (isGameOver) { stopTimer(); return; }
             timerValue--;
             ui.timerDisplay.textContent = timerValue;
-            if (timerValue <= 0) handleTimeOut();
+            if (timerValue <= 0) {
+                stopTimer();
+                handleTimeOut();
+            }
         }, 1000);
     };
 
     const fetchAndDisplayQuestion = async () => {
+        if (isGameOver) return;
+        
         ui.continueBtn.classList.add('hidden');
         ui.questionArea.innerHTML = '<p>Memuat soal...</p>';
         ui.optionsContainer.innerHTML = '';
@@ -158,6 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
         selectedAnswer = null;
         ui.submitBtn.disabled = true;
         ui.submitBtn.classList.remove('hidden');
+        
         try {
             const response = await fetch(`/api/question?level=${levelNum}`);
             const question = await response.json();
