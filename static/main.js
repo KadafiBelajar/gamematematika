@@ -1,6 +1,12 @@
 // Lokasi: static/main.js
 
 // ==========================================================
+// --- GLOBAL MANAGERS ---
+// ==========================================================
+let characterAnimator = null;
+let soundManager = null;
+
+// ==========================================================
 // --- PARTICLES ANIMATION ---
 // ==========================================================
 function initParticles() {
@@ -47,6 +53,17 @@ function animateAttack(attacker) {
         element.classList.add('attacking');
         setTimeout(() => element.classList.remove('attacking'), 500);
     }
+    
+    // Play attack animation menggunakan CharacterAnimator
+    if (characterAnimator) {
+        characterAnimator.playAttackAnimation(attacker);
+    }
+    
+    // Play attack sound
+    if (soundManager) {
+        const soundKey = attacker === 'player' ? 'playerAttack' : 'bossAttack';
+        soundManager.play(soundKey);
+    }
 }
 
 function animateDamage(target) {
@@ -61,6 +78,17 @@ function animateDamage(target) {
     if (hpBar) {
         hpBar.classList.add('damaged');
         setTimeout(() => hpBar.classList.remove('damaged'), 300);
+    }
+    
+    // Play hit animation menggunakan CharacterAnimator
+    if (characterAnimator) {
+        characterAnimator.playHitAnimation(target);
+    }
+    
+    // Play hit sound
+    if (soundManager) {
+        const soundKey = target === 'player' ? 'playerHit' : 'bossHit';
+        soundManager.play(soundKey);
     }
 }
 
@@ -90,6 +118,11 @@ function animateHeal() {
         
         setTimeout(() => particle.remove(), 1500);
     }
+    
+    // Play heal sound
+    if (soundManager) {
+        soundManager.play('heal');
+    }
 }
 
 // Add heal particle animation to CSS dynamically
@@ -112,11 +145,42 @@ if (!document.querySelector('#heal-particle-style')) {
 }
 
 // ==========================================================
+// --- INITIALIZE MANAGERS ---
+// ==========================================================
+async function initializeManagers() {
+    console.log('🚀 Initializing managers...');
+    
+    // Initialize Character Animator
+    if (typeof ASSETS_CONFIG !== 'undefined' && typeof CharacterAnimator !== 'undefined') {
+        characterAnimator = new CharacterAnimator(ASSETS_CONFIG);
+        await characterAnimator.init();
+    } else {
+        console.warn('⚠️ CharacterAnimator or ASSETS_CONFIG not available');
+    }
+    
+    // Initialize Sound Manager
+    if (typeof ASSETS_CONFIG !== 'undefined' && typeof SoundManager !== 'undefined') {
+        soundManager = new SoundManager(ASSETS_CONFIG);
+        await soundManager.init();
+        
+        // Auto-play background music (user interaction required)
+        // Will be played on first user interaction
+    } else {
+        console.warn('⚠️ SoundManager or ASSETS_CONFIG not available');
+    }
+    
+    console.log('✅ Managers initialized');
+}
+
+// ==========================================================
 // --- Event Listener untuk Toggle Developer Mode ---
 // ==========================================================
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     // Initialize particles
     initParticles();
+    
+    // Initialize managers (Character Animator & Sound Manager)
+    await initializeManagers();
     
     const devToggle = document.getElementById('dev-mode-toggle');
     if (devToggle) {
@@ -276,12 +340,26 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('>>> BOSS DEFEATED - YOU WIN! <<<');
             isGameOver = true;
             stopTimer();
+            
+            // Play victory sound
+            if (soundManager) {
+                soundManager.play('victory');
+                soundManager.stopBackgroundMusic();
+            }
+            
             setTimeout(() => {
                 ui.victoryOverlay.classList.remove('hidden');
             }, 500);
         } else if (playerHP <= 0) {
             isGameOver = true;
             stopTimer();
+            
+            // Play defeat sound
+            if (soundManager) {
+                soundManager.play('defeat');
+                soundManager.stopBackgroundMusic();
+            }
+            
             setTimeout(() => {
                 ui.gameOverOverlay.classList.remove('hidden');
             }, 500);
@@ -310,6 +388,9 @@ document.addEventListener('DOMContentLoaded', () => {
             ui.feedbackArea.textContent = '✓ Benar! Serangan berhasil!';
             ui.feedbackArea.style.color = '#10b981';
             
+            // Play correct sound
+            if (soundManager) soundManager.play('correct');
+            
             // Animate player attack
             animateAttack('player');
             createSlashEffect('boss');
@@ -320,6 +401,9 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             ui.feedbackArea.textContent = `✗ Salah! Jawaban yang benar: ${result.canonical_answer}`;
             ui.feedbackArea.style.color = '#ff4b4b';
+            
+            // Play wrong sound
+            if (soundManager) soundManager.play('wrong');
             
             // Animate boss attack
             animateAttack('boss');
@@ -366,6 +450,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const startTimer = () => {
         if (isGameOver) return;
         let timerValue = 90;
+        let warningPlayed = false;
         ui.timerDisplay.textContent = timerValue;
         ui.timerDisplay.classList.remove('warning', 'critical');
         stopTimer();
@@ -382,6 +467,12 @@ document.addEventListener('DOMContentLoaded', () => {
             // Visual warnings
             if (timerValue <= 10) {
                 ui.timerDisplay.classList.add('critical');
+                
+                // Play warning sound once
+                if (!warningPlayed && soundManager) {
+                    soundManager.play('timerWarning');
+                    warningPlayed = true;
+                }
             } else if (timerValue <= 30) {
                 ui.timerDisplay.classList.add('warning');
             }
@@ -509,5 +600,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- MULAI PERMAINAN ---
     console.log('Initializing game...');
+    
+    // Start background music on first user interaction
+    const startBackgroundMusic = () => {
+        if (soundManager) {
+            soundManager.playBackgroundMusic();
+        }
+        // Remove listeners after first interaction
+        document.removeEventListener('click', startBackgroundMusic);
+        document.removeEventListener('keydown', startBackgroundMusic);
+    };
+    
+    document.addEventListener('click', startBackgroundMusic, { once: true });
+    document.addEventListener('keydown', startBackgroundMusic, { once: true });
+    
     startLevel();
 });
