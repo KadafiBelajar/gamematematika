@@ -13,6 +13,14 @@
 <body>
     <div class="container">
         <a href="{{ url_for('stage_select') }}" style="float: left;">Kembali ke Stage</a>
+        
+        <!-- Dev Menu for Testing -->
+        <div style="float: right; font-size: 0.9em;">
+            <button onclick="resetProgress()" style="padding: 5px 10px; cursor: pointer; background-color: #dc3545; color: white; border: none; border-radius: 4px;">
+                🔄 Reset Progress
+            </button>
+        </div>
+        
         <h1>Stage: {{ stage_name|title }}</h1>
         <p>Selesaikan level untuk membuka level berikutnya.</p>
         
@@ -32,5 +40,16 @@
             {% endfor %}
         </div>
     </div>
+    
+    <script>
+        async function resetProgress() {
+            if (confirm('Reset progress? Hanya level 1 yang akan terbuka.')) {
+                const response = await fetch('/api/dev/reset-progress', { method: 'POST' });
+                const result = await response.json();
+                alert(result.message);
+                location.reload();
+            }
+        }
+    </script>
 </body>
 </html>

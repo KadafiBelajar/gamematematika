@@ -31,7 +31,8 @@ def level_select(stage_name):
     # Inisialisasi progres di session jika belum ada.
     if 'progress' not in session:
         # Struktur: session['progress'] = {'nama_stage': level_tertinggi_terbuka}
-        session['progress'] = {'limit': 1} 
+        session['progress'] = {'limit': 1, 'turunan': 1, 'integral': 1}
+        session.modified = True
 
     # Ambil level tertinggi yang sudah terbuka untuk stage ini.
     unlocked_until = session['progress'].get(stage_name, 1)
@@ -167,6 +168,15 @@ def dev_unlock_all():
     
     # Juga aktifkan kartu stage yang nonaktif di frontend
     return jsonify({"message": "Semua level dan stage telah dibuka untuk testing!"})
+
+@app.route("/api/dev/reset-progress", methods=["POST"])
+def dev_reset_progress():
+    """Endpoint khusus developer untuk reset progress ke awal."""
+    # Reset progress ke level 1 saja yang terbuka
+    session['progress'] = {'limit': 1, 'turunan': 1, 'integral': 1}
+    session.modified = True
+    
+    return jsonify({"message": "Progress telah direset! Hanya level 1 yang terbuka."})
 
 
 if __name__ == "__main__":
