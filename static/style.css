@@ -224,7 +224,8 @@ body.battle-screen {
 }
 
 .boss-section {
-    flex-direction: row-reverse;
+    /* Boss: HP bar di kiri, icon di kanan */
+    flex-direction: row;
 }
 
 /* ==========================================
@@ -1026,12 +1027,103 @@ body.battle-screen {
 }
 
 /* ==========================================
+   AVATAR IMAGE SUPPORT (GIF/WebP)
+   ========================================== */
+.avatar-image {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.avatar-frame.has-image .avatar-icon {
+    display: none;
+}
+
+/* ==========================================
    RESPONSIVE DESIGN
    ========================================== */
-@media (max-width: 1024px) {
+
+/* Large Laptops & Desktops (1440px+) */
+@media (min-width: 1440px) {
+    .fight-container {
+        padding: 30px;
+    }
+    
+    .battle-hud {
+        max-width: 1600px;
+        gap: 50px;
+    }
+    
+    .avatar-container {
+        width: 180px;
+        height: 180px;
+    }
+    
+    .vs-badge {
+        width: 160px;
+        height: 120px;
+    }
+    
+    .vs-badge span {
+        font-size: 3.2rem;
+    }
+    
+    .timer-display {
+        font-size: 4rem;
+    }
+    
+    .question-content {
+        font-size: 2.4rem;
+    }
+}
+
+/* Standard Laptops & Tablets Landscape (1024px - 1439px) */
+@media (min-width: 1024px) and (max-width: 1439px) {
+    .battle-hud {
+        gap: 35px;
+        margin-top: 90px;
+    }
+    
+    .avatar-container {
+        width: 140px;
+        height: 140px;
+    }
+    
+    .vs-badge {
+        width: 120px;
+        height: 90px;
+    }
+    
+    .vs-badge span {
+        font-size: 2.2rem;
+    }
+    
+    .combatant-name {
+        font-size: 1.5rem;
+    }
+    
+    .timer-display {
+        font-size: 3rem;
+    }
+    
+    .question-content {
+        font-size: 1.8rem;
+    }
+}
+
+/* Tablets & Small Laptops (768px - 1023px) */
+@media (min-width: 768px) and (max-width: 1023px) {
+    .fight-container {
+        padding: 15px;
+    }
+    
     .battle-hud {
         gap: 24px;
-        margin-top: 90px;
+        margin-top: 80px;
     }
     
     .avatar-container {
@@ -1052,29 +1144,62 @@ body.battle-screen {
         font-size: 1.3rem;
     }
     
+    .combatant-label {
+        font-size: 0.8rem;
+    }
+    
     .timer-display {
-        font-size: 2.2rem;
+        font-size: 2.5rem;
+    }
+    
+    .timer-frame {
+        padding: 12px 24px;
+    }
+    
+    .question-panel {
+        margin: 30px auto 20px;
+        padding: 20px 24px;
     }
     
     .question-content {
         font-size: 1.6rem;
+        min-height: 70px;
+        padding: 20px;
     }
     
     .option-btn {
         font-size: 1.3rem;
         padding: 20px 28px;
     }
+    
+    .answer-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+    }
+    
+    .action-btn {
+        font-size: 1.2rem;
+        padding: 16px 36px;
+    }
+    
+    .heal-btn {
+        top: 25px;
+        right: 25px;
+        padding: 14px 24px;
+        font-size: 1rem;
+    }
 }
 
-@media (max-width: 768px) {
+/* Mobile Landscape & Small Tablets (481px - 767px) */
+@media (min-width: 481px) and (max-width: 767px) {
     .fight-container {
-        padding: 10px;
+        padding: 12px;
     }
     
     .battle-hud {
         flex-direction: column;
-        gap: 30px;
-        margin-top: 100px;
+        gap: 25px;
+        margin-top: 90px;
     }
     
     .combatant-section {
@@ -1086,34 +1211,312 @@ body.battle-screen {
         flex-direction: row;
     }
     
+    .avatar-container {
+        width: 110px;
+        height: 110px;
+    }
+    
     .vs-badge {
+        width: 80px;
+        height: 60px;
         order: 0;
     }
     
+    .vs-badge span {
+        font-size: 1.5rem;
+    }
+    
+    .combatant-name {
+        font-size: 1.2rem;
+    }
+    
+    .combatant-label {
+        font-size: 0.75rem;
+    }
+    
+    .hp-percentage {
+        font-size: 1.1rem;
+    }
+    
+    .timer-container {
+        top: 15px;
+    }
+    
+    .timer-display {
+        font-size: 2rem;
+        min-width: 70px;
+    }
+    
+    .timer-frame {
+        padding: 10px 20px;
+    }
+    
+    .timer-icon {
+        width: 20px;
+        height: 20px;
+    }
+    
+    .timer-label {
+        font-size: 0.85rem;
+    }
+    
     .question-panel {
-        margin: 20px auto;
-        padding: 15px;
+        margin: 20px auto 15px;
+        padding: 18px 20px;
+    }
+    
+    .question-title {
+        font-size: 1rem;
     }
     
     .question-content {
         font-size: 1.4rem;
+        min-height: 60px;
+        padding: 16px;
     }
     
     .answer-grid {
         grid-template-columns: 1fr;
         gap: 15px;
-        padding: 10px;
+        padding: 15px;
+    }
+    
+    .option-btn {
+        font-size: 1.2rem;
+        padding: 18px 24px;
+    }
+    
+    .action-btn {
+        font-size: 1.1rem;
+        padding: 14px 32px;
     }
     
     .overlay-title {
-        font-size: 2.5rem;
+        font-size: 2.8rem;
+    }
+    
+    .overlay-message {
+        font-size: 1.3rem;
     }
     
     .heal-btn {
-        top: 20px;
-        right: 20px;
+        top: 18px;
+        right: 18px;
         padding: 12px 20px;
         font-size: 0.9rem;
+    }
+    
+    .heal-btn svg {
+        width: 20px;
+        height: 20px;
+    }
+}
+
+/* Mobile Portrait (320px - 480px) */
+@media (max-width: 480px) {
+    .fight-container {
+        padding: 8px;
+    }
+    
+    .battle-hud {
+        flex-direction: column;
+        gap: 20px;
+        margin-top: 85px;
+    }
+    
+    .combatant-section {
+        width: 100%;
+        max-width: 100%;
+        gap: 15px;
+    }
+    
+    .boss-section {
+        flex-direction: row;
+    }
+    
+    .avatar-container {
+        width: 90px;
+        height: 90px;
+    }
+    
+    .vs-badge {
+        width: 70px;
+        height: 50px;
+        order: 0;
+    }
+    
+    .vs-badge span {
+        font-size: 1.2rem;
+    }
+    
+    .combatant-name {
+        font-size: 1rem;
+    }
+    
+    .combatant-label {
+        font-size: 0.7rem;
+        letter-spacing: 1px;
+    }
+    
+    .hp-percentage {
+        font-size: 1rem;
+    }
+    
+    .hp-bar-wrapper {
+        height: 30px;
+    }
+    
+    .timer-container {
+        top: 12px;
+    }
+    
+    .timer-display {
+        font-size: 1.8rem;
+        min-width: 60px;
+        letter-spacing: 2px;
+    }
+    
+    .timer-frame {
+        padding: 8px 16px;
+    }
+    
+    .timer-icon {
+        width: 18px;
+        height: 18px;
+    }
+    
+    .timer-label {
+        font-size: 0.75rem;
+        letter-spacing: 1px;
+    }
+    
+    .question-panel {
+        margin: 15px auto 12px;
+        padding: 15px 16px;
+    }
+    
+    .question-icon {
+        width: 24px;
+        height: 24px;
+    }
+    
+    .question-title {
+        font-size: 0.9rem;
+        letter-spacing: 2px;
+    }
+    
+    .pause-menu {
+        font-size: 1.4rem;
+    }
+    
+    .question-content {
+        font-size: 1.2rem;
+        min-height: 50px;
+        padding: 14px;
+        line-height: 1.4;
+    }
+    
+    .answer-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+        padding: 12px;
+    }
+    
+    .option-btn {
+        font-size: 1.1rem;
+        padding: 16px 20px;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+        gap: 12px;
+        margin: 15px 0;
+    }
+    
+    .action-btn {
+        font-size: 1rem;
+        padding: 14px 28px;
+        width: 100%;
+        max-width: 280px;
+    }
+    
+    .btn-icon {
+        font-size: 1.3rem;
+    }
+    
+    .feedback-area {
+        font-size: 1.2rem;
+        min-height: 35px;
+    }
+    
+    .overlay-content {
+        padding: 40px 30px;
+        margin: 0 15px;
+    }
+    
+    .overlay-title {
+        font-size: 2.2rem;
+        letter-spacing: 4px;
+        margin-bottom: 18px;
+    }
+    
+    .overlay-message {
+        font-size: 1.1rem;
+        margin-bottom: 30px;
+    }
+    
+    .overlay-buttons {
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .overlay-btn {
+        font-size: 1rem;
+        padding: 14px 28px;
+        width: 100%;
+    }
+    
+    .heal-btn {
+        top: 15px;
+        right: 15px;
+        padding: 10px 16px;
+        font-size: 0.8rem;
+        gap: 6px;
+    }
+    
+    .heal-btn svg {
+        width: 18px;
+        height: 18px;
+    }
+}
+
+/* Extra Small Devices (max 360px) */
+@media (max-width: 360px) {
+    .timer-display {
+        font-size: 1.5rem;
+        min-width: 50px;
+    }
+    
+    .combatant-name {
+        font-size: 0.9rem;
+    }
+    
+    .avatar-container {
+        width: 80px;
+        height: 80px;
+    }
+    
+    .question-content {
+        font-size: 1.1rem;
+    }
+    
+    .option-btn {
+        font-size: 1rem;
+        padding: 14px 18px;
+    }
+    
+    .overlay-title {
+        font-size: 1.8rem;
     }
 }
 
