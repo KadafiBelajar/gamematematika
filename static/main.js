@@ -1,4 +1,4 @@
-// Lokasi: static/main.js
+// Lokasi: static/main.js - WITH LEVEL UNLOCK SYSTEM
 
 document.addEventListener('DOMContentLoaded', () => {
     // --- State & UI Elements ---
@@ -30,60 +30,123 @@ document.addEventListener('DOMContentLoaded', () => {
     const levelNum = ui.fightContainer.dataset.levelNum;
 
     // ==========================================================
+    // HELPER FUNCTIONS - SHOW/HIDE OVERLAY
+    // ==========================================================
+    
+    function hideAllOverlays() {
+        ui.gameOverOverlay.classList.add('hidden');
+        ui.gameOverOverlay.style.display = 'none';
+        ui.gameOverOverlay.style.visibility = 'hidden';
+        
+        ui.victoryOverlay.classList.add('hidden');
+        ui.victoryOverlay.style.display = 'none';
+        ui.victoryOverlay.style.visibility = 'hidden';
+    }
+    
+    function showGameOverOverlay() {
+        hideAllOverlays();
+        ui.gameOverOverlay.classList.remove('hidden');
+        ui.gameOverOverlay.style.display = 'flex';
+        ui.gameOverOverlay.style.visibility = 'visible';
+    }
+    
+    function showVictoryOverlay() {
+        hideAllOverlays();
+        ui.victoryOverlay.classList.remove('hidden');
+        ui.victoryOverlay.style.display = 'flex';
+        ui.victoryOverlay.style.visibility = 'visible';
+    }
+
+    // ==========================================================
     // --- FUNGSI UTAMA GAME ---
     // ==========================================================
 
-    /**
-     * Memulai level. Ini adalah satu-satunya titik masuk.
-     */
     const startLevel = () => {
-        // 1. ATUR HP PLAYER DAN BOSS DAHULU
+        console.log('=== START LEVEL ===');
+        
+        isGameOver = false;
+        selectedAnswer = null;
+        
         playerHP = 100;
         bossHP = 100;
-        isGameOver = false;
+        
+        console.log('Player HP:', playerHP, 'Boss HP:', bossHP);
 
-        // 2. ATUR TAMPILAN VISUAL HP
         ui.playerHpBar.style.width = '100%';
         ui.bossHpBar.style.width = '100%';
         ui.playerHpText.textContent = `100 / 100`;
         ui.bossHpText.textContent = `100 / 100`;
         
-        // 3. SEMBUNYIKAN LAYAR KEMENANGAN/KEKALAHAN
-        ui.gameOverOverlay.classList.add('hidden');
-        ui.victoryOverlay.classList.add('hidden');
+        hideAllOverlays();
         
-        // 4. BARU MUAT SOAL SETELAH SEMUANYA SIAP
+        console.log('Overlays hidden');
+        
+        ui.feedbackArea.innerHTML = '';
+        ui.continueBtn.classList.add('hidden');
+        
         fetchAndDisplayQuestion();
     };
 
     /**
-     * Fungsi ini dipanggil HANYA SETELAH ada perubahan HP.
-     * Ini adalah satu-satunya tempat logika menang/kalah berada.
+     * FUNGSI BARU: Unlock level berikutnya saat boss dikalahkan
      */
+    const unlockNextLevel = async () => {
+        console.log('>>> Attempting to unlock next level...');
+        
+        try {
+            const response = await fetch('/api/level-complete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    stage_name: stageName, 
+                    level_num: levelNum 
+                })
+            });
+            
+            const result = await response.json();
+            console.log('Unlock result:', result);
+            
+            if (result.next_level) {
+                console.log(`✅ Level ${result.next_level} UNLOCKED!`);
+            } else {
+                console.log('ℹ️ No new level to unlock (max level or already unlocked)');
+            }
+        } catch (error) {
+            console.error('Error unlocking level:', error);
+        }
+    };
+
     const applyDamageAndCheckStatus = (damageTo, amount) => {
+        console.log(`=== APPLY DAMAGE: ${amount} to ${damageTo} ===`);
+        
         if (damageTo === 'player') {
-            playerHP -= amount;
+            playerHP = Math.max(0, playerHP - amount);
         } else if (damageTo === 'boss') {
-            bossHP -= amount;
+            bossHP = Math.max(0, bossHP - amount);
         }
 
-        // Update tampilan visual HP
-        playerHP = Math.max(0, playerHP);
-        bossHP = Math.max(0, bossHP);
+        console.log('After damage - Player HP:', playerHP, 'Boss HP:', bossHP);
+
         ui.playerHpBar.style.width = `${playerHP}%`;
         ui.bossHpBar.style.width = `${bossHP}%`;
         ui.playerHpText.textContent = `${playerHP} / 100`;
         ui.bossHpText.textContent = `${bossHP} / 100`;
 
-        // LOGIKA EKSPLISIT SESUAI PERMINTAAN ANDA
-        if (bossHP <= 0) {
+        // CEK KONDISI MENANG/KALAH
+        if (bossHP <= 0 && !isGameOver) {
+            console.log('>>> BOSS DEFEATED - YOU WIN! <<<');
             isGameOver = true;
             stopTimer();
-            ui.victoryOverlay.classList.remove('hidden');
-        } else if (playerHP <= 0) {
+            
+            // UNLOCK LEVEL BERIKUTNYA
+            unlockNextLevel();
+            
+            setTimeout(() => showVictoryOverlay(), 500);
+        } else if (playerHP <= 0 && !isGameOver) {
+            console.log('>>> PLAYER DEFEATED - GAME OVER <<<');
             isGameOver = true;
             stopTimer();
-            ui.gameOverOverlay.classList.remove('hidden');
+            setTimeout(() => showGameOverOverlay(), 500);
         }
     };
 
@@ -91,44 +154,63 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const submitAnswerHandler = async () => {
         if (isGameOver || !selectedAnswer) return;
+        
+        console.log('Submitting answer:', selectedAnswer);
+        
         stopTimer();
         document.querySelectorAll('.option-btn').forEach(btn => btn.disabled = true);
         ui.submitBtn.disabled = true;
 
-        const response = await fetch(`/api/answer`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ question_id: currentQuestionId, answer: selectedAnswer, stage_name: stageName, level_num: levelNum })
-        });
-        const result = await response.json();
-        
-        if (result.correct) {
-            ui.feedbackArea.textContent = 'Benar! Serangan berhasil!';
-            ui.feedbackArea.style.color = 'green';
-            applyDamageAndCheckStatus('boss', 10); // Serang boss
-        } else {
-            ui.feedbackArea.textContent = `Salah! ❌ Jawaban yang benar: ${result.canonical_answer}`;
-            ui.feedbackArea.style.color = 'red';
-            applyDamageAndCheckStatus('player', 20); // Serang player
-        }
+        try {
+            const response = await fetch(`/api/answer`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    question_id: currentQuestionId, 
+                    answer: selectedAnswer, 
+                    stage_name: stageName, 
+                    level_num: levelNum 
+                })
+            });
+            const result = await response.json();
+            
+            console.log('Answer result:', result);
+            
+            if (result.correct) {
+                ui.feedbackArea.textContent = 'Benar! Serangan berhasil!';
+                ui.feedbackArea.style.color = 'green';
+                applyDamageAndCheckStatus('boss', 10);
+            } else {
+                ui.feedbackArea.textContent = `Salah! ❌ Jawaban yang benar: ${result.canonical_answer}`;
+                ui.feedbackArea.style.color = 'red';
+                applyDamageAndCheckStatus('player', 20);
+            }
 
-        if (!isGameOver) {
-            ui.submitBtn.classList.add('hidden');
-            ui.continueBtn.textContent = 'Soal Berikutnya';
-            ui.continueBtn.onclick = fetchAndDisplayQuestion;
-            ui.continueBtn.classList.remove('hidden');
+            if (!isGameOver) {
+                ui.submitBtn.classList.add('hidden');
+                ui.continueBtn.textContent = 'Soal Berikutnya';
+                ui.continueBtn.onclick = fetchAndDisplayQuestion;
+                ui.continueBtn.classList.remove('hidden');
+            }
+        } catch (error) {
+            console.error('Error submitting answer:', error);
+            ui.feedbackArea.textContent = 'Error: Gagal mengirim jawaban';
+            ui.feedbackArea.style.color = 'red';
         }
     };
 
     const handleTimeOut = () => {
         if (isGameOver) return;
+        
+        console.log('Time out!');
+        
         ui.feedbackArea.textContent = 'Waktu Habis! Kamu terkena serangan!';
         ui.feedbackArea.style.color = 'orange';
         
-        applyDamageAndCheckStatus('player', 5); // Serang player
+        applyDamageAndCheckStatus('player', 5);
 
         if (!isGameOver) {
-            ui.continueBtn.textContent = 'Beralih ke Soal Lain';
+            ui.continueBtn.textContent = 'Soal Berikutnya';
             ui.continueBtn.onclick = fetchAndDisplayQuestion;
             ui.continueBtn.classList.remove('hidden');
             ui.submitBtn.classList.add('hidden');
@@ -137,16 +219,29 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     
     // --- FUNGSI-FUNGSI BANTU ---
-    const stopTimer = () => clearInterval(timer);
+    const stopTimer = () => {
+        if (timer) {
+            clearInterval(timer);
+            timer = null;
+        }
+    };
+    
     const startTimer = () => {
         if (isGameOver) return;
+        
         let timerValue = 60;
         ui.timerDisplay.textContent = timerValue;
         stopTimer();
+        
         timer = setInterval(() => {
-            if (isGameOver) { stopTimer(); return; }
+            if (isGameOver) {
+                stopTimer();
+                return;
+            }
+            
             timerValue--;
             ui.timerDisplay.textContent = timerValue;
+            
             if (timerValue <= 0) {
                 stopTimer();
                 handleTimeOut();
@@ -155,7 +250,12 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const fetchAndDisplayQuestion = async () => {
-        if (isGameOver) return;
+        if (isGameOver) {
+            console.log('Game is over, not fetching new question');
+            return;
+        }
+        
+        console.log('Fetching new question...');
         
         ui.continueBtn.classList.add('hidden');
         ui.questionArea.innerHTML = '<p>Memuat soal...</p>';
@@ -168,8 +268,12 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch(`/api/question?level=${levelNum}`);
             const question = await response.json();
+            
+            console.log('Question loaded:', question.id);
+            
             currentQuestionId = question.id;
             ui.questionArea.innerHTML = `<p>Soal:</p><div>$$${question.latex}$$</div>`;
+            
             question.options.forEach(option => {
                 const button = document.createElement('button');
                 button.className = 'option-btn';
@@ -183,16 +287,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
                 ui.optionsContainer.appendChild(button);
             });
+            
             MathJax.typesetPromise([ui.questionArea]);
             startTimer();
         } catch (error) {
-            ui.questionArea.innerHTML = `<p style="color: red;">Gagal memuat soal.</p>`;
+            console.error('Error fetching question:', error);
+            ui.questionArea.innerHTML = `<p style="color: red;">Gagal memuat soal: ${error.message}</p>`;
         }
     };
 
     // --- EVENT LISTENERS ---
     ui.submitBtn.addEventListener('click', submitAnswerHandler);
-    ui.retryBtn.addEventListener('click', startLevel);
+    ui.retryBtn.addEventListener('click', () => {
+        console.log('Retry button clicked');
+        startLevel();
+    });
+    
     document.addEventListener('keydown', (event) => {
         if (event.key === 'Enter') {
             event.preventDefault();
@@ -205,5 +315,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // --- MULAI PERMAINAN ---
+    console.log('Initializing game...');
     startLevel();
 });

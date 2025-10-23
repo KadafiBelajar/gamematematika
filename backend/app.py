@@ -26,11 +26,8 @@ def level_select(stage_name):
     if stage_name in ['turunan', 'integral']:
         return render_template("coming_soon.html")
 
-    # Logika yang ada untuk stage 'limit'
-    """Menampilkan grid level untuk stage yang dipilih dan progres pemain."""
     # Inisialisasi progres di session jika belum ada.
     if 'progress' not in session:
-        # Struktur: session['progress'] = {'nama_stage': level_tertinggi_terbuka}
         session['progress'] = {'limit': 1} 
 
     # Ambil level tertinggi yang sudah terbuka untuk stage ini.
@@ -72,7 +69,6 @@ def api_get_question():
         print(f"Berhasil membuat soal ID: {question['id']} untuk level {level}")
         
         # Gunakan kunci session yang tetap untuk mencegah penumpukan data.
-        # Ini akan menimpa soal sebelumnya yang mungkin belum terjawab.
         session_data = {
             "id": question["id"],
             "answer": question["answer"],
@@ -80,10 +76,6 @@ def api_get_question():
         }
         session['current_question'] = session_data
         session.modified = True
-
-        # DEBUG: Cek ukuran data yang disimpan di session
-        session_data_size = len(json.dumps(session_data).encode('utf-8'))
-        print(f"--- UKURAN DATA SESSION: {session_data_size} bytes ---")
 
         # Siapkan data yang akan dikirim ke pengguna.
         question_for_user = {
@@ -102,11 +94,9 @@ def api_get_question():
             "detail": str(e)
         }), 500
 
-# Lokasi: backend/app.py
-
 @app.route("/api/answer", methods=["POST"])
 def api_handle_answer():
-    """API untuk memvalidasi jawaban dan meng-unlock level berikutnya."""
+    """API untuk memvalidasi jawaban (tidak langsung unlock level)."""
     data = request.get_json()
     question_id = data.get("question_id")
     user_answer = data.get("answer")
@@ -115,41 +105,61 @@ def api_handle_answer():
 
     question_data = session.get('current_question')
 
-    # Verifikasi ID soal untuk mencegah kondisi balapan (misal: membuka 2 tab)
+    # Verifikasi ID soal
     if question_data is None or question_data.get('id') != question_id:
         return jsonify({"error": "Sesi soal tidak ditemukan atau sudah kedaluwarsa."}), 400
 
     correct_answer = question_data['answer']
     is_correct = check_answer(user_answer, correct_answer)
     
-    # --- BAGIAN YANG DIUBAH ---
-    # Hapus atau jadikan komentar bagian penjelasan untuk sementara
-    # params = question_data['params']
-    # params['level'] = level_num 
-    # explanation = generate_limit_explanation(params)
-    # -------------------------
-
     session.pop('current_question', None)
 
-    if is_correct:
-        if 'progress' not in session:
-            session['progress'] = {'limit': 1, 'turunan': 1, 'integral': 1}
-        
-        unlocked_until = session['progress'].get(stage_name, 1)
-        # Kita akan memodifikasi logika ini nanti saat pertarungan selesai
-        # Untuk sekarang, biarkan seperti ini
-        if level_num == unlocked_until and level_num < 15:
-            session['progress'][stage_name] = unlocked_until + 1
-            session.modified = True
-            
-    # --- BAGIAN YANG DIUBAH ---
-    # Buat response baru tanpa 'explanation'
+    # PENTING: Jangan unlock level di sini!
+    # Unlock hanya terjadi saat boss HP = 0 (di endpoint /api/level-complete)
+    
     response = {
         "correct": is_correct,
         "canonical_answer": correct_answer
     }
-    # -------------------------
     return jsonify(response)
+
+@app.route("/api/level-complete", methods=["POST"])
+def api_level_complete():
+    """
+    API baru untuk unlock level berikutnya.
+    Dipanggil oleh JavaScript saat Boss HP <= 0.
+    """
+    data = request.get_json()
+    stage_name = data.get("stage_name")
+    level_num = int(data.get("level_num"))
+    
+    print(f"=== LEVEL COMPLETE: Stage={stage_name}, Level={level_num} ===")
+    
+    # Inisialisasi progress jika belum ada
+    if 'progress' not in session:
+        session['progress'] = {'limit': 1, 'turunan': 1, 'integral': 1}
+    
+    unlocked_until = session['progress'].get(stage_name, 1)
+    
+    # Unlock level berikutnya hanya jika:
+    # 1. Level yang diselesaikan adalah level tertinggi yang terbuka
+    # 2. Belum mencapai level maksimal (15)
+    if level_num == unlocked_until and level_num < 15:
+        session['progress'][stage_name] = unlocked_until + 1
+        session.modified = True
+        print(f">>> Level {level_num + 1} UNLOCKED! <<<")
+        return jsonify({
+            "success": True,
+            "message": f"Level {level_num + 1} telah terbuka!",
+            "next_level": level_num + 1
+        })
+    else:
+        print(f">>> No new level unlocked (already unlocked or max level) <<<")
+        return jsonify({
+            "success": True,
+            "message": "Level diselesaikan!",
+            "next_level": None
+        })
 
 # --- Developer Endpoint ---
 
@@ -165,7 +175,6 @@ def dev_unlock_all():
     session['progress']['integral'] = 15
     session.modified = True
     
-    # Juga aktifkan kartu stage yang nonaktif di frontend
     return jsonify({"message": "Semua level dan stage telah dibuka untuk testing!"})
 
 
