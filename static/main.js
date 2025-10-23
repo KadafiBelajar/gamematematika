@@ -1,5 +1,3 @@
-// Lokasi: static/main.js
-
 // ==========================================================
 // --- PARTICLES ANIMATION ---
 // ==========================================================
@@ -163,6 +161,9 @@ document.addEventListener('DOMContentLoaded', () => {
         fightContainer: document.querySelector('.fight-container'),
     };
     
+    const fightContainer = document.querySelector('.fight-container');
+    if (!fightContainer) return; // Keluar jika tidak di halaman pertarungan
+
     const stageName = ui.fightContainer.dataset.stageName;
     const levelNum = ui.fightContainer.dataset.levelNum;
 

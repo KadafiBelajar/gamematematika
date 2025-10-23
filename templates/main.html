@@ -16,7 +16,6 @@
     <script src="{{ url_for('static', filename='main.js') }}?v=BATTLE_V3" defer></script>
 </head>
 <body class="battle-screen">
-    <!-- Animated Background -->
     <div class="battle-background">
         <div class="stars-layer"></div>
         <div class="particles-layer" id="particles-container"></div>
@@ -24,7 +23,6 @@
 
     <div class="fight-container" data-stage-name="{{ stage_name }}" data-level-num="{{ level_num }}">
         
-        <!-- Timer di tengah atas -->
         <div class="timer-container">
             <div class="timer-frame">
                 <svg class="timer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -36,9 +34,7 @@
             </div>
         </div>
 
-        <!-- Battle HUD -->
         <div class="battle-hud">
-            <!-- Player Section -->
             <div class="combatant-section player-section">
                 <div class="avatar-container player-avatar" id="player-avatar">
                     <div class="avatar-glow"></div>
@@ -68,12 +64,10 @@
                 </div>
             </div>
 
-            <!-- VS Badge -->
             <div class="vs-badge">
                 <span>VS</span>
             </div>
 
-            <!-- Boss Section -->
             <div class="combatant-section boss-section">
                 <div class="hp-section">
                     <div class="combatant-info boss-info">
@@ -106,7 +100,6 @@
             </div>
         </div>
 
-        <!-- Question Panel -->
         <div class="question-panel">
             <div class="question-header">
                 <svg class="question-icon" viewBox="0 0 24 24" fill="currentColor">
@@ -120,10 +113,8 @@
             </div>
         </div>
 
-        <!-- Answer Options -->
         <div id="options-container" class="answer-grid"></div>
 
-        <!-- Action Buttons -->
         <div class="action-buttons">
             <button id="submit-btn" class="action-btn attack-btn" disabled>
                 <span class="btn-icon">⚔️</span>
@@ -135,10 +126,8 @@
             </button>
         </div>
 
-        <!-- Feedback Area -->
         <div id="feedback-area" class="feedback-area"></div>
 
-        <!-- Heal Button -->
         <button id="heal-btn" class="heal-btn" title="Heal (+25 HP)">
             <svg viewBox="0 0 24 24" fill="currentColor">
                 <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
@@ -146,7 +135,6 @@
             <span>HEAL</span>
         </button>
 
-        <!-- GAME OVER OVERLAY -->
         <div id="game-over-overlay" class="overlay hidden">
             <div class="overlay-content defeat">
                 <h2 class="overlay-title defeat-title">DEFEAT</h2>
@@ -162,7 +150,6 @@
             </div>
         </div>
 
-        <!-- VICTORY OVERLAY -->
         <div id="victory-overlay" class="overlay hidden">
             <div class="overlay-content victory">
                 <h2 class="overlay-title victory-title">VICTORY!</h2>
@@ -176,7 +163,6 @@
         </div>
     </div>
 
-    <!-- Attack Effects -->
     <div id="attack-effects"></div>
 </body>
 </html>
