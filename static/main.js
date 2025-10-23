@@ -1,7 +1,123 @@
 // Lokasi: static/main.js
 
+// ==========================================================
+// --- PARTICLES ANIMATION ---
+// ==========================================================
+function initParticles() {
+    const particlesContainer = document.getElementById('particles-container');
+    if (!particlesContainer) return;
+    
+    for (let i = 0; i < 30; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        particle.style.left = `${Math.random() * 100}%`;
+        particle.style.top = `${Math.random() * 100}%`;
+        particle.style.animationDelay = `${Math.random() * 3}s`;
+        particle.style.animationDuration = `${3 + Math.random() * 2}s`;
+        particlesContainer.appendChild(particle);
+    }
+}
+
+// ==========================================================
+// --- ATTACK EFFECTS ---
+// ==========================================================
+function createSlashEffect(target = 'boss') {
+    const effectsContainer = document.getElementById('attack-effects');
+    if (!effectsContainer) return;
+    
+    const slash = document.createElement('div');
+    slash.className = 'slash-effect';
+    slash.style.top = `${Math.random() * 50 + 25}%`;
+    
+    if (target === 'boss') {
+        slash.style.left = '50%';
+    } else {
+        slash.style.left = '10%';
+        slash.style.transform = 'rotate(45deg)';
+    }
+    
+    effectsContainer.appendChild(slash);
+    
+    setTimeout(() => slash.remove(), 500);
+}
+
+function animateAttack(attacker) {
+    const element = document.getElementById(`${attacker}-avatar`);
+    if (element) {
+        element.classList.add('attacking');
+        setTimeout(() => element.classList.remove('attacking'), 500);
+    }
+}
+
+function animateDamage(target) {
+    const element = document.getElementById(`${target}-avatar`);
+    const hpBar = document.getElementById(`${target}-hp-bar`);
+    
+    if (element) {
+        element.classList.add('damaged');
+        setTimeout(() => element.classList.remove('damaged'), 500);
+    }
+    
+    if (hpBar) {
+        hpBar.classList.add('damaged');
+        setTimeout(() => hpBar.classList.remove('damaged'), 300);
+    }
+}
+
+// ==========================================================
+// --- HEAL ANIMATION ---
+// ==========================================================
+function animateHeal() {
+    const playerAvatar = document.getElementById('player-avatar');
+    if (!playerAvatar) return;
+    
+    // Create healing particles
+    for (let i = 0; i < 10; i++) {
+        const particle = document.createElement('div');
+        particle.style.position = 'absolute';
+        particle.style.width = '6px';
+        particle.style.height = '6px';
+        particle.style.background = '#3b82f6';
+        particle.style.borderRadius = '50%';
+        particle.style.boxShadow = '0 0 10px #3b82f6';
+        particle.style.left = '50%';
+        particle.style.top = '50%';
+        particle.style.transform = 'translate(-50%, -50%)';
+        particle.style.animation = `heal-particle ${0.8 + Math.random() * 0.4}s ease-out forwards`;
+        particle.style.animationDelay = `${i * 0.05}s`;
+        
+        playerAvatar.appendChild(particle);
+        
+        setTimeout(() => particle.remove(), 1500);
+    }
+}
+
+// Add heal particle animation to CSS dynamically
+if (!document.querySelector('#heal-particle-style')) {
+    const style = document.createElement('style');
+    style.id = 'heal-particle-style';
+    style.textContent = `
+        @keyframes heal-particle {
+            0% {
+                transform: translate(-50%, -50%) scale(0);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(${Math.random() * 200 - 100}px, ${-100 - Math.random() * 100}px) scale(1);
+                opacity: 0;
+            }
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+// ==========================================================
 // --- Event Listener untuk Toggle Developer Mode ---
+// ==========================================================
 document.addEventListener('DOMContentLoaded', () => {
+    // Initialize particles
+    initParticles();
+    
     const devToggle = document.getElementById('dev-mode-toggle');
     if (devToggle) {
         devToggle.addEventListener('change', async function() {
@@ -11,7 +127,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     headers: { 'Content-Type': 'application/json' }
                 });
                 const result = await response.json();
-                // Reload halaman untuk melihat perubahan
                 location.reload();
             } catch (error) {
                 console.error('Error toggling dev mode:', error);
@@ -67,8 +182,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // 2. ATUR TAMPILAN VISUAL HP
         ui.playerHpBar.style.width = '100%';
         ui.bossHpBar.style.width = '100%';
-        ui.playerHpText.textContent = `100 / 100`;
-        ui.bossHpText.textContent = `100 / 100`;
+        ui.playerHpText.textContent = '100%';
+        ui.bossHpText.textContent = '100%';
         
         // 3. SEMBUNYIKAN LAYAR KEMENANGAN/KEKALAHAN
         ui.gameOverOverlay.classList.add('hidden');
@@ -85,8 +200,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const applyDamageAndCheckStatus = (damageTo, amount) => {
         if (damageTo === 'player') {
             playerHP -= amount;
+            animateDamage('player');
         } else if (damageTo === 'boss') {
             bossHP -= amount;
+            animateDamage('boss');
         }
 
         // Update tampilan visual HP
@@ -94,18 +211,22 @@ document.addEventListener('DOMContentLoaded', () => {
         bossHP = Math.max(0, bossHP);
         ui.playerHpBar.style.width = `${playerHP}%`;
         ui.bossHpBar.style.width = `${bossHP}%`;
-        ui.playerHpText.textContent = `${playerHP} / 100`;
-        ui.bossHpText.textContent = `${bossHP} / 100`;
+        ui.playerHpText.textContent = `${playerHP}%`;
+        ui.bossHpText.textContent = `${bossHP}%`;
 
         // LOGIKA EKSPLISIT SESUAI PERMINTAAN ANDA
         if (bossHP <= 0) {
             isGameOver = true;
             stopTimer();
-            ui.victoryOverlay.classList.remove('hidden');
+            setTimeout(() => {
+                ui.victoryOverlay.classList.remove('hidden');
+            }, 500);
         } else if (playerHP <= 0) {
             isGameOver = true;
             stopTimer();
-            ui.gameOverOverlay.classList.remove('hidden');
+            setTimeout(() => {
+                ui.gameOverOverlay.classList.remove('hidden');
+            }, 500);
         }
     };
 
@@ -125,33 +246,48 @@ document.addEventListener('DOMContentLoaded', () => {
         const result = await response.json();
         
         if (result.correct) {
-            ui.feedbackArea.textContent = 'Benar! Serangan berhasil!';
-            ui.feedbackArea.style.color = 'green';
-            applyDamageAndCheckStatus('boss', 10); // Serang boss
+            ui.feedbackArea.textContent = '✓ Benar! Serangan berhasil!';
+            ui.feedbackArea.style.color = '#10b981';
+            
+            // Animate player attack
+            animateAttack('player');
+            createSlashEffect('boss');
+            
+            setTimeout(() => {
+                applyDamageAndCheckStatus('boss', 10); // Serang boss
+            }, 300);
         } else {
-            ui.feedbackArea.textContent = `Salah! ❌ Jawaban yang benar: ${result.canonical_answer}`;
-            ui.feedbackArea.style.color = 'red';
-            applyDamageAndCheckStatus('player', 20); // Serang player
+            ui.feedbackArea.textContent = `✗ Salah! Jawaban yang benar: ${result.canonical_answer}`;
+            ui.feedbackArea.style.color = '#ff4b4b';
+            
+            // Animate boss attack
+            animateAttack('boss');
+            createSlashEffect('player');
+            
+            setTimeout(() => {
+                applyDamageAndCheckStatus('player', 20); // Serang player
+            }, 300);
         }
 
         if (!isGameOver) {
             ui.submitBtn.classList.add('hidden');
-            ui.continueBtn.textContent = 'Soal Berikutnya';
-            ui.continueBtn.onclick = fetchAndDisplayQuestion;
             ui.continueBtn.classList.remove('hidden');
         }
     };
 
     const handleTimeOut = () => {
         if (isGameOver) return;
-        ui.feedbackArea.textContent = 'Waktu Habis! Kamu terkena serangan!';
-        ui.feedbackArea.style.color = 'orange';
+        ui.feedbackArea.textContent = '⏱ Waktu Habis! Kamu terkena serangan!';
+        ui.feedbackArea.style.color = '#f59e0b';
         
-        applyDamageAndCheckStatus('player', 5); // Serang player
+        animateAttack('boss');
+        createSlashEffect('player');
+        
+        setTimeout(() => {
+            applyDamageAndCheckStatus('player', 5); // Serang player
+        }, 300);
 
         if (!isGameOver) {
-            ui.continueBtn.textContent = 'Beralih ke Soal Lain';
-            ui.continueBtn.onclick = fetchAndDisplayQuestion;
             ui.continueBtn.classList.remove('hidden');
             ui.submitBtn.classList.add('hidden');
             document.querySelectorAll('.option-btn').forEach(btn => btn.disabled = true);
@@ -162,13 +298,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const stopTimer = () => clearInterval(timer);
     const startTimer = () => {
         if (isGameOver) return;
-        let timerValue = 60;
+        let timerValue = 90;
         ui.timerDisplay.textContent = timerValue;
+        ui.timerDisplay.classList.remove('warning', 'critical');
         stopTimer();
         timer = setInterval(() => {
             if (isGameOver) { stopTimer(); return; }
             timerValue--;
             ui.timerDisplay.textContent = timerValue;
+            
+            // Visual warnings
+            if (timerValue <= 10) {
+                ui.timerDisplay.classList.add('critical');
+            } else if (timerValue <= 30) {
+                ui.timerDisplay.classList.add('warning');
+            }
+            
             if (timerValue <= 0) {
                 stopTimer();
                 handleTimeOut();
@@ -191,11 +336,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch(`/api/question?level=${levelNum}`);
             const question = await response.json();
             currentQuestionId = question.id;
-            ui.questionArea.innerHTML = `<p>Soal:</p><div>$$${question.latex}$$</div>`;
-            question.options.forEach(option => {
+            ui.questionArea.innerHTML = `<div>$$${question.latex}$$</div>`;
+            question.options.forEach((option, index) => {
                 const button = document.createElement('button');
                 button.className = 'option-btn';
                 button.textContent = option;
+                button.style.animationDelay = `${index * 0.1}s`;
                 button.onclick = () => {
                     if (isGameOver) return;
                     document.querySelectorAll('.option-btn').forEach(btn => btn.classList.remove('selected'));
@@ -208,20 +354,74 @@ document.addEventListener('DOMContentLoaded', () => {
             MathJax.typesetPromise([ui.questionArea]);
             startTimer();
         } catch (error) {
-            ui.questionArea.innerHTML = `<p style="color: red;">Gagal memuat soal.</p>`;
+            ui.questionArea.innerHTML = `<p style="color: #ff4b4b;">Gagal memuat soal.</p>`;
         }
     };
 
+    // --- HEAL BUTTON LOGIC ---
+    const healBtn = document.getElementById('heal-btn');
+    let healCount = 3; // Player can heal 3 times per level
+    
+    const handleHeal = () => {
+        if (healCount <= 0 || isGameOver || playerHP >= 100) return;
+        
+        healCount--;
+        const healAmount = 25;
+        playerHP = Math.min(100, playerHP + healAmount);
+        
+        // Update UI
+        ui.playerHpBar.style.width = `${playerHP}%`;
+        ui.playerHpText.textContent = `${playerHP}%`;
+        
+        // Show feedback
+        ui.feedbackArea.textContent = `💙 +${healAmount} HP! (${healCount} heal tersisa)`;
+        ui.feedbackArea.style.color = '#3b82f6';
+        
+        // Animate
+        animateHeal();
+        
+        // Disable button if no heals left
+        if (healCount <= 0) {
+            healBtn.disabled = true;
+            healBtn.style.opacity = '0.3';
+        }
+        
+        // Update button text
+        healBtn.querySelector('span').textContent = `HEAL (${healCount})`;
+        
+        setTimeout(() => {
+            ui.feedbackArea.textContent = '';
+        }, 2000);
+    };
+    
+    if (healBtn) {
+        healBtn.addEventListener('click', handleHeal);
+        healBtn.querySelector('span').textContent = `HEAL (${healCount})`;
+    }
+
     // --- EVENT LISTENERS ---
     ui.submitBtn.addEventListener('click', submitAnswerHandler);
-    ui.retryBtn.addEventListener('click', startLevel);
+    ui.retryBtn.addEventListener('click', () => {
+        healCount = 3;
+        if (healBtn) {
+            healBtn.disabled = false;
+            healBtn.style.opacity = '1';
+            healBtn.querySelector('span').textContent = `HEAL (${healCount})`;
+        }
+        startLevel();
+    });
+    
+    if (ui.continueBtn) {
+        ui.continueBtn.addEventListener('click', fetchAndDisplayQuestion);
+    }
+    
     document.addEventListener('keydown', (event) => {
         if (event.key === 'Enter') {
             event.preventDefault();
             if (!ui.submitBtn.disabled && !ui.submitBtn.classList.contains('hidden')) {
                 submitAnswerHandler();
             } else if (!ui.continueBtn.classList.contains('hidden') && !isGameOver) {
-                ui.continueBtn.click();
+                fetchAndDisplayQuestion();
             }
         }
     });
