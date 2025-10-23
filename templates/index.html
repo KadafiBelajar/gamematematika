@@ -1,29 +1,263 @@
-<html lang="id">
+<!DOCTYPE html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Game Matematika: Limit</title>
+    <title>AI Detector & Text Humanizer - Multi-language Platform</title>
     
-    <!-- TAMBAHKAN BAGIAN INI -->
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    <!-- -------------------- -->
-
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <div class="container">
-        <h1>Nowled</h1>
-        <p>Pilih mode untuk memulai!</p>
-        <div class="menu">
-            <a href="{{ url_for('stage_select') }}" class="menu-card">
-                <h2>Play Mode</h2>
-            </a>
-            <a href="{{ url_for('learn') }}" class="menu-card">
-                <h2>Training Mode</h2>
-            </a>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-robot"></i>
+                    <h1>AI Text Platform</h1>
+                </div>
+                <nav class="nav">
+                    <a href="#detect" class="nav-link active" data-tab="detect">
+                        <i class="fas fa-search"></i>
+                        AI Detector
+                    </a>
+                    <a href="#humanize" class="nav-link" data-tab="humanize">
+                        <i class="fas fa-user-edit"></i>
+                        Text Humanizer
+                    </a>
+                    <a href="#combined" class="nav-link" data-tab="combined">
+                        <i class="fas fa-sync-alt"></i>
+                        Combined Tool
+                    </a>
+                </nav>
+            </div>
         </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+        <div class="container">
+            <!-- AI Detector Tab -->
+            <div id="detect-tab" class="tab-content active">
+                <div class="tool-header">
+                    <h2><i class="fas fa-search"></i> AI Text Detector</h2>
+                    <p>Detect AI-generated text in any language with high accuracy</p>
+                </div>
+                
+                <div class="tool-grid">
+                    <div class="input-section">
+                        <div class="form-group">
+                            <label for="detect-language">Language</label>
+                            <select id="detect-language" class="form-control">
+                                <option value="">Auto-detect</option>
+                                {% for code, name in languages.items() %}
+                                <option value="{{ code }}">{{ name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="detect-text">Text to Analyze</label>
+                            <textarea id="detect-text" class="form-control" rows="10" 
+                                placeholder="Paste your text here to check if it's AI-generated..."></textarea>
+                            <div class="char-count">
+                                <span id="detect-char-count">0</span> characters
+                            </div>
+                        </div>
+                        
+                        <button id="detect-btn" class="btn btn-primary">
+                            <i class="fas fa-search"></i> Detect AI Text
+                        </button>
+                    </div>
+                    
+                    <div class="result-section">
+                        <div id="detect-result" class="result-container">
+                            <div class="placeholder">
+                                <i class="fas fa-robot"></i>
+                                <p>Results will appear here</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Text Humanizer Tab -->
+            <div id="humanize-tab" class="tab-content">
+                <div class="tool-header">
+                    <h2><i class="fas fa-user-edit"></i> Text Humanizer</h2>
+                    <p>Transform text into natural, human-like writing</p>
+                </div>
+                
+                <div class="tool-grid">
+                    <div class="input-section">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="humanize-language">Language</label>
+                                <select id="humanize-language" class="form-control">
+                                    {% for code, name in languages.items() %}
+                                    <option value="{{ code }}" {% if code == 'en' %}selected{% endif %}>{{ name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="humanize-scope">Writing Style</label>
+                                <select id="humanize-scope" class="form-control">
+                                    <option value="general">General</option>
+                                    <option value="academic">Academic</option>
+                                    <option value="business">Business</option>
+                                    <option value="email">Email</option>
+                                    <option value="creative">Creative</option>
+                                    <option value="casual">Casual</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="humanize-audience">Target Audience</label>
+                                <select id="humanize-audience" class="form-control">
+                                    <option value="general">General Public</option>
+                                    <option value="knowledgeable">Knowledgeable</option>
+                                    <option value="expert">Expert</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="use-web-context" checked>
+                                Use web context for current information
+                            </label>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="humanize-text">Text to Humanize</label>
+                            <textarea id="humanize-text" class="form-control" rows="10" 
+                                placeholder="Enter text to make it sound more natural and human-like..."></textarea>
+                            <div class="char-count">
+                                <span id="humanize-char-count">0</span> characters
+                            </div>
+                        </div>
+                        
+                        <button id="humanize-btn" class="btn btn-primary">
+                            <i class="fas fa-magic"></i> Humanize Text
+                        </button>
+                    </div>
+                    
+                    <div class="result-section">
+                        <div id="humanize-result" class="result-container">
+                            <div class="placeholder">
+                                <i class="fas fa-user-edit"></i>
+                                <p>Humanized text will appear here</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Combined Tool Tab -->
+            <div id="combined-tab" class="tab-content">
+                <div class="tool-header">
+                    <h2><i class="fas fa-sync-alt"></i> Combined Tool</h2>
+                    <p>Detect AI text and humanize it in one step</p>
+                </div>
+                
+                <div class="tool-grid single-column">
+                    <div class="input-section full-width">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="combined-language">Language</label>
+                                <select id="combined-language" class="form-control">
+                                    {% for code, name in languages.items() %}
+                                    <option value="{{ code }}" {% if code == 'en' %}selected{% endif %}>{{ name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="combined-scope">Writing Style</label>
+                                <select id="combined-scope" class="form-control">
+                                    <option value="general">General</option>
+                                    <option value="academic">Academic</option>
+                                    <option value="business">Business</option>
+                                    <option value="email">Email</option>
+                                    <option value="creative">Creative</option>
+                                    <option value="casual">Casual</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="combined-audience">Target Audience</label>
+                                <select id="combined-audience" class="form-control">
+                                    <option value="general">General Public</option>
+                                    <option value="knowledgeable">Knowledgeable</option>
+                                    <option value="expert">Expert</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="combined-text">Text to Process</label>
+                            <textarea id="combined-text" class="form-control" rows="8" 
+                                placeholder="Enter text to detect and humanize..."></textarea>
+                            <div class="char-count">
+                                <span id="combined-char-count">0</span> characters
+                            </div>
+                        </div>
+                        
+                        <button id="combined-btn" class="btn btn-primary">
+                            <i class="fas fa-sync-alt"></i> Process Text
+                        </button>
+                    </div>
+                    
+                    <div class="results-grid">
+                        <div class="result-section">
+                            <h3><i class="fas fa-search"></i> Detection Results</h3>
+                            <div id="combined-detect-result" class="result-container">
+                                <div class="placeholder">
+                                    <i class="fas fa-robot"></i>
+                                    <p>Detection results will appear here</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="result-section">
+                            <h3><i class="fas fa-user-edit"></i> Humanized Text</h3>
+                            <div id="combined-humanize-result" class="result-container">
+                                <div class="placeholder">
+                                    <i class="fas fa-user-edit"></i>
+                                    <p>Humanized text will appear here</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 AI Text Platform. Supporting all world languages with high accuracy.</p>
+        </div>
+    </footer>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="spinner"></div>
+        <p>Processing...</p>
     </div>
+
+    <!-- Scripts -->
+    <script src="{{ url_for('static', filename='main.js') }}"></script>
 </body>
 </html>

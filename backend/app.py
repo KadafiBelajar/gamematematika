@@ -1,195 +1,280 @@
-import traceback
+"""
+AI Detector & Text Humanizer Platform
+Backend API dengan Flask
+"""
+
+from flask import Flask, render_template, jsonify, request
+from flask_cors import CORS
+import os
 import json
-from flask import Flask, render_template, jsonify, request, session, url_for, redirect
-from question_gen import generate_question_by_level
-from grader import check_answer, generate_limit_explanation
+from datetime import datetime
+import traceback
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
+# Import modules
+from ai_detector import detect_ai_text
+from text_humanizer import humanize_text
+from utils import handle_errors, rate_limit, validate_text_input, validate_language, log_api_call, APIError
 
 app = Flask(__name__, template_folder='../templates', static_folder='../static')
-app.secret_key = "kunci-rahasia-yang-sangat-aman-dan-unik"
+app.secret_key = os.urandom(24)
+CORS(app)
 
-# --- Rute Navigasi Utama ---
+# Supported languages
+SUPPORTED_LANGUAGES = {
+    'en': 'English',
+    'id': 'Bahasa Indonesia',
+    'es': 'Español',
+    'fr': 'Français',
+    'de': 'Deutsch',
+    'it': 'Italiano',
+    'pt': 'Português',
+    'ru': 'Русский',
+    'ja': '日本語',
+    'ko': '한국어',
+    'zh': '中文',
+    'ar': 'العربية',
+    'hi': 'हिन्दी',
+    'th': 'ไทย',
+    'vi': 'Tiếng Việt',
+    'tr': 'Türkçe',
+    'pl': 'Polski',
+    'nl': 'Nederlands',
+    'sv': 'Svenska',
+    'da': 'Dansk',
+    'no': 'Norsk',
+    'fi': 'Suomi',
+    'cs': 'Čeština',
+    'hu': 'Magyar',
+    'el': 'Ελληνικά',
+    'he': 'עברית',
+    'uk': 'Українська',
+    'ro': 'Română',
+    'bg': 'Български',
+    'hr': 'Hrvatski',
+    'sk': 'Slovenčina',
+    'sl': 'Slovenščina',
+    'et': 'Eesti',
+    'lv': 'Latviešu',
+    'lt': 'Lietuvių',
+    'ms': 'Bahasa Melayu',
+    'tl': 'Tagalog',
+    'sw': 'Kiswahili',
+    'bn': 'বাংলা',
+    'ta': 'தமிழ்',
+    'te': 'తెలుగు',
+    'ml': 'മലയാളം',
+    'ur': 'اردو',
+    'fa': 'فارسی',
+    'ka': 'ქართული',
+    'mn': 'Монгол',
+    'ne': 'नेपाली',
+    'si': 'සිංහල',
+    'my': 'မြန်မာဘာသာ',
+    'km': 'ភាសាខ្មែរ',
+    'lo': 'ລາວ',
+    'cy': 'Cymraeg',
+    'eu': 'Euskara',
+    'gl': 'Galego',
+    'ca': 'Català',
+    'is': 'Íslenska',
+    'mt': 'Malti',
+    'sq': 'Shqip',
+    'mk': 'Македонски',
+    'hy': 'Հայերեն',
+    'az': 'Azərbaycan',
+    'kk': 'Қазақ',
+    'ky': 'Кыргызча',
+    'uz': 'Oʻzbek',
+    'tg': 'Тоҷикӣ',
+    'tk': 'Türkmen'
+}
+
+# --- Routes ---
 
 @app.route("/")
 def index():
-    """Menampilkan halaman utama."""
-    return render_template("index.html")
+    """Main page"""
+    return render_template("index.html", languages=SUPPORTED_LANGUAGES)
 
-@app.route("/stages")
-def stage_select():
-    """Menampilkan halaman pemilihan stage."""
-    dev_mode_on = session.get('dev_mode', False)
-    return render_template("stage_select.html", dev_mode_on=dev_mode_on)
-
-@app.route("/levels/<stage_name>")
-def level_select(stage_name):
-    """Menampilkan grid level atau halaman 'Segera Hadir'."""
-    # Jika stage adalah turunan atau integral, tampilkan halaman 'Segera Hadir'.
-    if stage_name in ['turunan', 'integral']:
-        return render_template("coming_soon.html")
-
-    # Logika yang ada untuk stage 'limit'
-    """Menampilkan grid level untuk stage yang dipilih dan progres pemain."""
-    # Inisialisasi progres di session jika belum ada.
-    if 'progress' not in session:
-        # Struktur: session['progress'] = {'nama_stage': level_tertinggi_terbuka}
-        session['progress'] = {'limit': 1, 'turunan': 1, 'integral': 1}
-        session.modified = True
-
-    # Ambil level tertinggi yang sudah terbuka untuk stage ini.
-    unlocked_until = session['progress'].get(stage_name, 1)
-    
-    # Siapkan data untuk dikirim ke template HTML.
-    levels_data = []
-    for i in range(1, 16):
-        state = 'unlocked' if i <= unlocked_until else 'locked'
-        levels_data.append({'number': i, 'state': state})
-    
-    dev_mode_on = session.get('dev_mode', False)
-    return render_template("level_select.html", levels=levels_data, stage_name=stage_name, dev_mode_on=dev_mode_on)
-
-@app.route("/main/<stage_name>/<int:level_num>")
-def main_game(stage_name, level_num):
-    """Halaman permainan utama untuk level yang spesifik."""
-    # Cek apakah level yang diakses sudah terbuka untuk mencegah akses via URL.
-    unlocked_until = session.get('progress', {}).get(stage_name, 1)
-    if level_num > unlocked_until:
-        # Jika belum, lempar kembali ke halaman pemilihan level.
-        return redirect(url_for('level_select', stage_name=stage_name))
-        
-    # Kirim info stage dan level ke template agar bisa digunakan oleh JavaScript.
-    return render_template("main.html", stage_name=stage_name, level_num=level_num)
-
-@app.route("/learn")
-def learn():
-    return render_template("learn.html")
-
-# --- API (Endpoints yang dipanggil oleh JavaScript) ---
-
-@app.route("/api/question")
-def api_get_question():
-    """API untuk mendapatkan soal berdasarkan level dari query parameter."""
-    level = request.args.get('level', 1, type=int)
-    print(f"--- Menerima permintaan untuk soal level: {level} ---")
-    try:
-        question = generate_question_by_level(level)
-        print(f"Berhasil membuat soal ID: {question['id']} untuk level {level}")
-        
-        # Gunakan kunci session yang tetap untuk mencegah penumpukan data.
-        # Ini akan menimpa soal sebelumnya yang mungkin belum terjawab.
-        session_data = {
-            "id": question["id"],
-            "answer": question["answer"],
-            "params": question["params"]
-        }
-        session['current_question'] = session_data
-        session.modified = True
-
-        # DEBUG: Cek ukuran data yang disimpan di session
-        session_data_size = len(json.dumps(session_data).encode('utf-8'))
-        print(f"--- UKURAN DATA SESSION: {session_data_size} bytes ---")
-
-        # Siapkan data yang akan dikirim ke pengguna.
-        question_for_user = {
-            "id": question["id"],
-            "latex": question["latex"],
-            "options": question["options"]
-        }
-        
-        return jsonify(question_for_user)
-    except Exception as e:
-        error_trace = traceback.format_exc()
-        print(f"!!! GAGAL membuat soal untuk level {level} !!!")
-        print(error_trace)
-        return jsonify({
-            "error": "Terjadi kesalahan di server saat membuat soal.",
-            "detail": str(e)
-        }), 500
-
-# Lokasi: backend/app.py
-
-@app.route("/api/answer", methods=["POST"])
-def api_handle_answer():
-    """API untuk memvalidasi jawaban dan meng-unlock level berikutnya."""
+@app.route("/api/detect", methods=["POST"])
+@handle_errors
+@rate_limit(max_calls=30, window=60)  # 30 calls per minute
+def api_detect():
+    """API endpoint untuk AI text detection"""
     data = request.get_json()
-    question_id = data.get("question_id")
-    user_answer = data.get("answer")
-    stage_name = data.get("stage_name")
-    level_num = int(data.get("level_num"))
-
-    question_data = session.get('current_question')
-
-    # Verifikasi ID soal untuk mencegah kondisi balapan (misal: membuka 2 tab)
-    if question_data is None or question_data.get('id') != question_id:
-        return jsonify({"error": "Sesi soal tidak ditemukan atau sudah kedaluwarsa."}), 400
-
-    correct_answer = question_data['answer']
-    is_correct = check_answer(user_answer, correct_answer)
     
-    # --- BAGIAN YANG DIUBAH ---
-    # Hapus atau jadikan komentar bagian penjelasan untuk sementara
-    # params = question_data['params']
-    # params['level'] = level_num 
-    # explanation = generate_limit_explanation(params)
-    # -------------------------
+    # Validate input
+    text = validate_text_input(data.get('text', ''))
+    language = validate_language(data.get('language'), SUPPORTED_LANGUAGES)
+    
+    # Detect AI text
+    result = detect_ai_text(text, language)
+    
+    # Add timestamp
+    result['timestamp'] = datetime.now().isoformat()
+    
+    # Log API call
+    log_api_call('/api/detect', request, 200)
+    
+    return jsonify(result)
 
-    session.pop('current_question', None)
+@app.route("/api/humanize", methods=["POST"])
+@handle_errors
+@rate_limit(max_calls=20, window=60)  # 20 calls per minute (more resource intensive)
+def api_humanize():
+    """API endpoint untuk text humanization"""
+    data = request.get_json()
+    
+    # Validate input
+    text = validate_text_input(data.get('text', ''))
+    scope = data.get('scope', 'general')
+    audience = data.get('audience', 'general')
+    language = validate_language(data.get('language', 'en'), SUPPORTED_LANGUAGES)
+    use_web_context = data.get('use_web_context', True)
+    
+    # Validate scope and audience
+    valid_scopes = ['academic', 'business', 'general', 'email', 'creative', 'casual']
+    valid_audiences = ['general', 'knowledgeable', 'expert']
+    
+    if scope not in valid_scopes:
+        raise APIError(f'Invalid scope. Must be one of: {", ".join(valid_scopes)}')
+    
+    if audience not in valid_audiences:
+        raise APIError(f'Invalid audience. Must be one of: {", ".join(valid_audiences)}')
+    
+    # Humanize text
+    result = humanize_text(text, scope, audience, language, use_web_context)
+    
+    # Add timestamp
+    result['timestamp'] = datetime.now().isoformat()
+    
+    # Log API call
+    log_api_call('/api/humanize', request, 200)
+    
+    return jsonify(result)
 
-    if is_correct:
-        if 'progress' not in session:
-            session['progress'] = {'limit': 1, 'turunan': 1, 'integral': 1}
-        
-        unlocked_until = session['progress'].get(stage_name, 1)
-        # Kita akan memodifikasi logika ini nanti saat pertarungan selesai
-        # Untuk sekarang, biarkan seperti ini
-        if level_num == unlocked_until and level_num < 15:
-            session['progress'][stage_name] = unlocked_until + 1
-            session.modified = True
-            
-    # --- BAGIAN YANG DIUBAH ---
-    # Buat response baru tanpa 'explanation'
-    response = {
-        "correct": is_correct,
-        "canonical_answer": correct_answer
+@app.route("/api/process", methods=["POST"])
+@handle_errors
+@rate_limit(max_calls=15, window=60)  # 15 calls per minute (most resource intensive)
+def api_process():
+    """Combined API endpoint untuk detect dan humanize sekaligus"""
+    data = request.get_json()
+    
+    # Validate input
+    text = validate_text_input(data.get('text', ''))
+    scope = data.get('scope', 'general')
+    audience = data.get('audience', 'general')
+    language = validate_language(data.get('language', 'en'), SUPPORTED_LANGUAGES)
+    use_web_context = data.get('use_web_context', True)
+    
+    # Validate scope and audience
+    valid_scopes = ['academic', 'business', 'general', 'email', 'creative', 'casual']
+    valid_audiences = ['general', 'knowledgeable', 'expert']
+    
+    if scope not in valid_scopes:
+        raise APIError(f'Invalid scope. Must be one of: {", ".join(valid_scopes)}')
+    
+    if audience not in valid_audiences:
+        raise APIError(f'Invalid audience. Must be one of: {", ".join(valid_audiences)}')
+    
+    # First detect
+    detection_result = detect_ai_text(text, language)
+    
+    # Then humanize
+    humanize_result = humanize_text(text, scope, audience, language, use_web_context)
+    
+    # Combine results
+    combined_result = {
+        'detection': detection_result,
+        'humanization': humanize_result,
+        'timestamp': datetime.now().isoformat()
     }
-    # -------------------------
-    return jsonify(response)
-
-# --- Developer Endpoint ---
-
-@app.route("/api/dev/toggle-dev-mode", methods=["POST"])
-def toggle_dev_mode():
-    """Toggle Developer Mode: backup progress asli atau kembalikan."""
-    # Cek status dev mode saat ini
-    dev_mode_on = session.get('dev_mode', False)
     
-    if not dev_mode_on:
-        # Nyalakan dev mode: backup progress asli
-        if 'progress' not in session:
-            session['progress'] = {'limit': 1, 'turunan': 1, 'integral': 1}
-        
-        # Simpan progress asli
-        session['real_progress'] = session['progress'].copy()
-        
-        # Unlock semua level
-        session['progress'] = {'limit': 15, 'turunan': 15, 'integral': 15}
-        session['dev_mode'] = True
-        session.modified = True
-        
-        return jsonify({"message": "Developer Mode diaktifkan! Semua level terbuka.", "dev_mode": True})
-    else:
-        # Matikan dev mode: kembalikan progress asli
-        if 'real_progress' in session:
-            session['progress'] = session['real_progress'].copy()
-            session.pop('real_progress', None)
-        else:
-            # Fallback jika real_progress tidak ada
-            session['progress'] = {'limit': 1, 'turunan': 1, 'integral': 1}
-        
-        session['dev_mode'] = False
-        session.modified = True
-        
-        return jsonify({"message": "Developer Mode dinonaktifkan! Progress dikembalikan.", "dev_mode": False})
+    # Log API call
+    log_api_call('/api/process', request, 200)
+    
+    return jsonify(combined_result)
 
+@app.route("/api/languages", methods=["GET"])
+def api_languages():
+    """Get supported languages"""
+    return jsonify({
+        'languages': SUPPORTED_LANGUAGES,
+        'total': len(SUPPORTED_LANGUAGES)
+    })
+
+@app.route("/api/scopes", methods=["GET"])
+def api_scopes():
+    """Get available scopes"""
+    scopes = {
+        'academic': {
+            'name': 'Academic',
+            'description': 'Formal, research-based writing with references',
+            'icon': '🎓'
+        },
+        'business': {
+            'name': 'Business',
+            'description': 'Professional, concise, result-oriented',
+            'icon': '💼'
+        },
+        'general': {
+            'name': 'General',
+            'description': 'Neutral, easy to understand, informative',
+            'icon': '📝'
+        },
+        'email': {
+            'name': 'Email',
+            'description': 'Polite, direct, personal',
+            'icon': '✉️'
+        },
+        'creative': {
+            'name': 'Creative',
+            'description': 'Expressive, imaginative, engaging',
+            'icon': '🎨'
+        },
+        'casual': {
+            'name': 'Casual',
+            'description': 'Relaxed, conversational, friendly',
+            'icon': '😊'
+        }
+    }
+    return jsonify(scopes)
+
+@app.route("/api/audiences", methods=["GET"])
+def api_audiences():
+    """Get available audiences"""
+    audiences = {
+        'general': {
+            'name': 'General Public',
+            'description': 'No specialized knowledge required',
+            'icon': '👥'
+        },
+        'knowledgeable': {
+            'name': 'Knowledgeable',
+            'description': 'Basic understanding of the topic',
+            'icon': '🧑‍🎓'
+        },
+        'expert': {
+            'name': 'Expert',
+            'description': 'Deep expertise in the field',
+            'icon': '👨‍🔬'
+        }
+    }
+    return jsonify(audiences)
+
+@app.route("/api/health", methods=["GET"])
+def api_health():
+    """Health check endpoint"""
+    return jsonify({
+        'status': 'healthy',
+        'timestamp': datetime.now().isoformat(),
+        'version': '1.0.0'
+    })
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=True)

@@ -1,231 +1,404 @@
-// Lokasi: static/main.js
+// Main JavaScript for AI Text Platform
 
-// --- Event Listener untuk Toggle Developer Mode ---
+// Global state
+const state = {
+    currentTab: 'detect',
+    loading: false
+};
+
+// API endpoints
+const API = {
+    detect: '/api/detect',
+    humanize: '/api/humanize',
+    process: '/api/process',
+    languages: '/api/languages',
+    scopes: '/api/scopes',
+    audiences: '/api/audiences'
+};
+
+// DOM Elements
+const elements = {
+    // Tabs
+    navLinks: document.querySelectorAll('.nav-link'),
+    tabContents: document.querySelectorAll('.tab-content'),
+    
+    // Loading
+    loadingOverlay: document.getElementById('loading-overlay'),
+    
+    // Detect tab
+    detectLanguage: document.getElementById('detect-language'),
+    detectText: document.getElementById('detect-text'),
+    detectCharCount: document.getElementById('detect-char-count'),
+    detectBtn: document.getElementById('detect-btn'),
+    detectResult: document.getElementById('detect-result'),
+    
+    // Humanize tab
+    humanizeLanguage: document.getElementById('humanize-language'),
+    humanizeScope: document.getElementById('humanize-scope'),
+    humanizeAudience: document.getElementById('humanize-audience'),
+    useWebContext: document.getElementById('use-web-context'),
+    humanizeText: document.getElementById('humanize-text'),
+    humanizeCharCount: document.getElementById('humanize-char-count'),
+    humanizeBtn: document.getElementById('humanize-btn'),
+    humanizeResult: document.getElementById('humanize-result'),
+    
+    // Combined tab
+    combinedLanguage: document.getElementById('combined-language'),
+    combinedScope: document.getElementById('combined-scope'),
+    combinedAudience: document.getElementById('combined-audience'),
+    combinedText: document.getElementById('combined-text'),
+    combinedCharCount: document.getElementById('combined-char-count'),
+    combinedBtn: document.getElementById('combined-btn'),
+    combinedDetectResult: document.getElementById('combined-detect-result'),
+    combinedHumanizeResult: document.getElementById('combined-humanize-result')
+};
+
+// Initialize
 document.addEventListener('DOMContentLoaded', () => {
-    const devToggle = document.getElementById('dev-mode-toggle');
-    if (devToggle) {
-        devToggle.addEventListener('change', async function() {
-            try {
-                const response = await fetch('/api/dev/toggle-dev-mode', { 
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
-                });
-                const result = await response.json();
-                // Reload halaman untuk melihat perubahan
-                location.reload();
-            } catch (error) {
-                console.error('Error toggling dev mode:', error);
-                alert('Gagal mengubah Developer Mode');
-            }
-        });
-    }
+    initializeTabs();
+    initializeTextareas();
+    initializeButtons();
 });
 
-// --- Game Logic (hanya untuk halaman main.html) ---
-document.addEventListener('DOMContentLoaded', () => {
-    // --- State & UI Elements ---
-    let playerHP;
-    let bossHP;
-    let isGameOver;
-    let timer;
-    let currentQuestionId;
-    let selectedAnswer;
-
-    const ui = {
-        playerHpBar: document.getElementById('player-hp-bar'),
-        playerHpText: document.getElementById('player-hp-text'),
-        bossHpBar: document.getElementById('boss-hp-bar'),
-        bossHpText: document.getElementById('boss-hp-text'),
-        timerDisplay: document.getElementById('timer-display'),
-        questionArea: document.getElementById('question-area'),
-        optionsContainer: document.getElementById('options-container'),
-        feedbackArea: document.getElementById('feedback-area'),
-        continueBtn: document.getElementById('continue-btn'),
-        submitBtn: document.getElementById('submit-btn'),
-        gameOverOverlay: document.getElementById('game-over-overlay'),
-        victoryOverlay: document.getElementById('victory-overlay'),
-        retryBtn: document.getElementById('retry-btn'),
-        fightContainer: document.querySelector('.fight-container'),
-    };
-    
-    const stageName = ui.fightContainer.dataset.stageName;
-    const levelNum = ui.fightContainer.dataset.levelNum;
-
-    // ==========================================================
-    // --- FUNGSI UTAMA GAME ---
-    // ==========================================================
-
-    /**
-     * Memulai level. Ini adalah satu-satunya titik masuk.
-     */
-    const startLevel = () => {
-        // 1. ATUR HP PLAYER DAN BOSS DAHULU
-        playerHP = 100;
-        bossHP = 100;
-        isGameOver = false;
-
-        // 2. ATUR TAMPILAN VISUAL HP
-        ui.playerHpBar.style.width = '100%';
-        ui.bossHpBar.style.width = '100%';
-        ui.playerHpText.textContent = `100 / 100`;
-        ui.bossHpText.textContent = `100 / 100`;
-        
-        // 3. SEMBUNYIKAN LAYAR KEMENANGAN/KEKALAHAN
-        ui.gameOverOverlay.classList.add('hidden');
-        ui.victoryOverlay.classList.add('hidden');
-        
-        // 4. BARU MUAT SOAL SETELAH SEMUANYA SIAP
-        fetchAndDisplayQuestion();
-    };
-
-    /**
-     * Fungsi ini dipanggil HANYA SETELAH ada perubahan HP.
-     * Ini adalah satu-satunya tempat logika menang/kalah berada.
-     */
-    const applyDamageAndCheckStatus = (damageTo, amount) => {
-        if (damageTo === 'player') {
-            playerHP -= amount;
-        } else if (damageTo === 'boss') {
-            bossHP -= amount;
-        }
-
-        // Update tampilan visual HP
-        playerHP = Math.max(0, playerHP);
-        bossHP = Math.max(0, bossHP);
-        ui.playerHpBar.style.width = `${playerHP}%`;
-        ui.bossHpBar.style.width = `${bossHP}%`;
-        ui.playerHpText.textContent = `${playerHP} / 100`;
-        ui.bossHpText.textContent = `${bossHP} / 100`;
-
-        // LOGIKA EKSPLISIT SESUAI PERMINTAAN ANDA
-        if (bossHP <= 0) {
-            isGameOver = true;
-            stopTimer();
-            ui.victoryOverlay.classList.remove('hidden');
-        } else if (playerHP <= 0) {
-            isGameOver = true;
-            stopTimer();
-            ui.gameOverOverlay.classList.remove('hidden');
-        }
-    };
-
-    // --- ALUR GAME ---
-
-    const submitAnswerHandler = async () => {
-        if (isGameOver || !selectedAnswer) return;
-        stopTimer();
-        document.querySelectorAll('.option-btn').forEach(btn => btn.disabled = true);
-        ui.submitBtn.disabled = true;
-
-        const response = await fetch(`/api/answer`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ question_id: currentQuestionId, answer: selectedAnswer, stage_name: stageName, level_num: levelNum })
+// Tab Navigation
+function initializeTabs() {
+    elements.navLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const tabName = link.dataset.tab;
+            switchTab(tabName);
         });
-        const result = await response.json();
-        
-        if (result.correct) {
-            ui.feedbackArea.textContent = 'Benar! Serangan berhasil!';
-            ui.feedbackArea.style.color = 'green';
-            applyDamageAndCheckStatus('boss', 10); // Serang boss
-        } else {
-            ui.feedbackArea.textContent = `Salah! ❌ Jawaban yang benar: ${result.canonical_answer}`;
-            ui.feedbackArea.style.color = 'red';
-            applyDamageAndCheckStatus('player', 20); // Serang player
-        }
-
-        if (!isGameOver) {
-            ui.submitBtn.classList.add('hidden');
-            ui.continueBtn.textContent = 'Soal Berikutnya';
-            ui.continueBtn.onclick = fetchAndDisplayQuestion;
-            ui.continueBtn.classList.remove('hidden');
-        }
-    };
-
-    const handleTimeOut = () => {
-        if (isGameOver) return;
-        ui.feedbackArea.textContent = 'Waktu Habis! Kamu terkena serangan!';
-        ui.feedbackArea.style.color = 'orange';
-        
-        applyDamageAndCheckStatus('player', 5); // Serang player
-
-        if (!isGameOver) {
-            ui.continueBtn.textContent = 'Beralih ke Soal Lain';
-            ui.continueBtn.onclick = fetchAndDisplayQuestion;
-            ui.continueBtn.classList.remove('hidden');
-            ui.submitBtn.classList.add('hidden');
-            document.querySelectorAll('.option-btn').forEach(btn => btn.disabled = true);
-        }
-    };
-    
-    // --- FUNGSI-FUNGSI BANTU ---
-    const stopTimer = () => clearInterval(timer);
-    const startTimer = () => {
-        if (isGameOver) return;
-        let timerValue = 60;
-        ui.timerDisplay.textContent = timerValue;
-        stopTimer();
-        timer = setInterval(() => {
-            if (isGameOver) { stopTimer(); return; }
-            timerValue--;
-            ui.timerDisplay.textContent = timerValue;
-            if (timerValue <= 0) {
-                stopTimer();
-                handleTimeOut();
-            }
-        }, 1000);
-    };
-
-    const fetchAndDisplayQuestion = async () => {
-        if (isGameOver) return;
-        
-        ui.continueBtn.classList.add('hidden');
-        ui.questionArea.innerHTML = '<p>Memuat soal...</p>';
-        ui.optionsContainer.innerHTML = '';
-        ui.feedbackArea.innerHTML = '';
-        selectedAnswer = null;
-        ui.submitBtn.disabled = true;
-        ui.submitBtn.classList.remove('hidden');
-        
-        try {
-            const response = await fetch(`/api/question?level=${levelNum}`);
-            const question = await response.json();
-            currentQuestionId = question.id;
-            ui.questionArea.innerHTML = `<p>Soal:</p><div>$$${question.latex}$$</div>`;
-            question.options.forEach(option => {
-                const button = document.createElement('button');
-                button.className = 'option-btn';
-                button.textContent = option;
-                button.onclick = () => {
-                    if (isGameOver) return;
-                    document.querySelectorAll('.option-btn').forEach(btn => btn.classList.remove('selected'));
-                    button.classList.add('selected');
-                    selectedAnswer = option;
-                    ui.submitBtn.disabled = false;
-                };
-                ui.optionsContainer.appendChild(button);
-            });
-            MathJax.typesetPromise([ui.questionArea]);
-            startTimer();
-        } catch (error) {
-            ui.questionArea.innerHTML = `<p style="color: red;">Gagal memuat soal.</p>`;
-        }
-    };
-
-    // --- EVENT LISTENERS ---
-    ui.submitBtn.addEventListener('click', submitAnswerHandler);
-    ui.retryBtn.addEventListener('click', startLevel);
-    document.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter') {
-            event.preventDefault();
-            if (!ui.submitBtn.disabled && !ui.submitBtn.classList.contains('hidden')) {
-                submitAnswerHandler();
-            } else if (!ui.continueBtn.classList.contains('hidden') && !isGameOver) {
-                ui.continueBtn.click();
-            }
-        }
     });
+}
 
-    // --- MULAI PERMAINAN ---
-    startLevel();
+function switchTab(tabName) {
+    // Update nav links
+    elements.navLinks.forEach(link => {
+        link.classList.toggle('active', link.dataset.tab === tabName);
+    });
+    
+    // Update tab contents
+    elements.tabContents.forEach(content => {
+        content.classList.toggle('active', content.id === `${tabName}-tab`);
+    });
+    
+    state.currentTab = tabName;
+}
+
+// Textarea character counting
+function initializeTextareas() {
+    // Detect textarea
+    elements.detectText.addEventListener('input', () => {
+        elements.detectCharCount.textContent = elements.detectText.value.length;
+    });
+    
+    // Humanize textarea
+    elements.humanizeText.addEventListener('input', () => {
+        elements.humanizeCharCount.textContent = elements.humanizeText.value.length;
+    });
+    
+    // Combined textarea
+    elements.combinedText.addEventListener('input', () => {
+        elements.combinedCharCount.textContent = elements.combinedText.value.length;
+    });
+}
+
+// Button handlers
+function initializeButtons() {
+    elements.detectBtn.addEventListener('click', handleDetect);
+    elements.humanizeBtn.addEventListener('click', handleHumanize);
+    elements.combinedBtn.addEventListener('click', handleCombined);
+}
+
+// Loading state
+function setLoading(isLoading) {
+    state.loading = isLoading;
+    elements.loadingOverlay.classList.toggle('active', isLoading);
+    
+    // Disable all buttons when loading
+    const buttons = document.querySelectorAll('.btn');
+    buttons.forEach(btn => {
+        btn.disabled = isLoading;
+    });
+}
+
+// API Handlers
+async function handleDetect() {
+    const text = elements.detectText.value.trim();
+    if (!text) {
+        showAlert('Please enter some text to analyze', 'error');
+        return;
+    }
+    
+    setLoading(true);
+    
+    try {
+        const response = await fetch(API.detect, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                text: text,
+                language: elements.detectLanguage.value || null
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            displayDetectionResult(data, elements.detectResult);
+        } else {
+            throw new Error(data.error || 'Detection failed');
+        }
+    } catch (error) {
+        console.error('Detection error:', error);
+        showAlert('Error: ' + error.message, 'error');
+    } finally {
+        setLoading(false);
+    }
+}
+
+async function handleHumanize() {
+    const text = elements.humanizeText.value.trim();
+    if (!text) {
+        showAlert('Please enter some text to humanize', 'error');
+        return;
+    }
+    
+    setLoading(true);
+    
+    try {
+        const response = await fetch(API.humanize, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                text: text,
+                scope: elements.humanizeScope.value,
+                audience: elements.humanizeAudience.value,
+                language: elements.humanizeLanguage.value,
+                use_web_context: elements.useWebContext.checked
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            displayHumanizedResult(data, elements.humanizeResult);
+        } else {
+            throw new Error(data.error || 'Humanization failed');
+        }
+    } catch (error) {
+        console.error('Humanization error:', error);
+        showAlert('Error: ' + error.message, 'error');
+    } finally {
+        setLoading(false);
+    }
+}
+
+async function handleCombined() {
+    const text = elements.combinedText.value.trim();
+    if (!text) {
+        showAlert('Please enter some text to process', 'error');
+        return;
+    }
+    
+    setLoading(true);
+    
+    try {
+        const response = await fetch(API.process, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                text: text,
+                scope: elements.combinedScope.value,
+                audience: elements.combinedAudience.value,
+                language: elements.combinedLanguage.value,
+                use_web_context: true
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            displayDetectionResult(data.detection, elements.combinedDetectResult);
+            displayHumanizedResult(data.humanization, elements.combinedHumanizeResult);
+        } else {
+            throw new Error(data.error || 'Processing failed');
+        }
+    } catch (error) {
+        console.error('Combined processing error:', error);
+        showAlert('Error: ' + error.message, 'error');
+    } finally {
+        setLoading(false);
+    }
+}
+
+// Result Display Functions
+function displayDetectionResult(data, container) {
+    const isAI = data.is_ai_generated;
+    const confidence = Math.round(data.confidence * 100);
+    const mainLanguage = Object.entries(data.language)[0];
+    
+    container.innerHTML = `
+        <div class="detection-result">
+            <div class="ai-score">
+                <div class="score-circle ${isAI ? 'ai-detected' : 'human-written'}">
+                    <svg width="150" height="150">
+                        <circle cx="75" cy="75" r="70" fill="none" stroke="#e5e7eb" stroke-width="10"/>
+                        <circle cx="75" cy="75" r="70" fill="none" 
+                            stroke="${isAI ? '#ef4444' : '#10b981'}" 
+                            stroke-width="10"
+                            stroke-dasharray="${confidence * 4.4} 440"
+                            stroke-linecap="round"/>
+                    </svg>
+                    <div class="score-value">${confidence}%</div>
+                </div>
+                <div class="score-label">
+                    ${isAI ? '🤖 AI Generated' : '✍️ Human Written'}
+                </div>
+                <p>${data.explanation ? data.explanation[0] : ''}</p>
+            </div>
+            
+            <div class="detection-details">
+                ${mainLanguage ? `
+                <div class="detail-item">
+                    <span class="detail-label">Detected Language</span>
+                    <span class="detail-value">
+                        <span class="language-badge">
+                            <i class="fas fa-globe"></i> ${mainLanguage[0]} (${Math.round(mainLanguage[1] * 100)}%)
+                        </span>
+                    </span>
+                </div>
+                ` : ''}
+                
+                ${data.model_scores ? Object.entries(data.model_scores).map(([model, score]) => `
+                <div class="detail-item">
+                    <span class="detail-label">${formatModelName(model)}</span>
+                    <span class="detail-value">${Math.round(score * 100)}%</span>
+                </div>
+                `).join('') : ''}
+            </div>
+            
+            ${data.explanation && data.explanation.length > 1 ? `
+            <div class="modifications-list">
+                <h4>Analysis Details</h4>
+                <ul>
+                    ${data.explanation.slice(1).map(exp => `<li>• ${exp}</li>`).join('')}
+                </ul>
+            </div>
+            ` : ''}
+        </div>
+    `;
+}
+
+function displayHumanizedResult(data, container) {
+    const humanizedText = data.humanized_text;
+    const copyId = 'copy-' + Date.now();
+    
+    container.innerHTML = `
+        <div class="humanized-result">
+            <div class="humanized-text" id="text-${copyId}">${escapeHtml(humanizedText)}</div>
+            <button class="copy-button" onclick="copyText('text-${copyId}')">
+                <i class="fas fa-copy"></i> Copy Text
+            </button>
+            
+            ${data.modifications && data.modifications.length > 0 ? `
+            <div class="modifications-list">
+                <h4>Modifications Applied</h4>
+                <ul>
+                    ${data.modifications.map(mod => `<li>• ${mod}</li>`).join('')}
+                </ul>
+            </div>
+            ` : ''}
+            
+            ${data.web_contexts && data.web_contexts.length > 0 ? `
+            <div class="modifications-list">
+                <h4>Web Context Used</h4>
+                <ul>
+                    ${data.web_contexts.map(ctx => `
+                        <li>• <a href="${ctx.url}" target="_blank">${ctx.title || 'Source'}</a></li>
+                    `).join('')}
+                </ul>
+            </div>
+            ` : ''}
+        </div>
+    `;
+}
+
+// Utility Functions
+function formatModelName(modelName) {
+    const nameMap = {
+        'heuristic_analysis': 'Linguistic Analysis',
+        'Hello-SimpleAI/chatgpt-detector-roberta': 'ChatGPT Detector',
+        'umm-maybe/AI-image-detector': 'AI Content Detector'
+    };
+    return nameMap[modelName] || modelName;
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function copyText(elementId) {
+    const element = document.getElementById(elementId);
+    const text = element.textContent;
+    
+    navigator.clipboard.writeText(text).then(() => {
+        showAlert('Text copied to clipboard!', 'success');
+    }).catch(err => {
+        console.error('Copy failed:', err);
+        showAlert('Failed to copy text', 'error');
+    });
+}
+
+function showAlert(message, type = 'info') {
+    // Create alert element
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type}`;
+    alert.innerHTML = `
+        <i class="fas fa-${type === 'error' ? 'exclamation-circle' : type === 'success' ? 'check-circle' : 'info-circle'}"></i>
+        <span>${message}</span>
+    `;
+    
+    // Add to page
+    document.querySelector('.main .container').prepend(alert);
+    
+    // Remove after 5 seconds
+    setTimeout(() => {
+        alert.remove();
+    }, 5000);
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+    // Ctrl/Cmd + Enter to submit
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        switch (state.currentTab) {
+            case 'detect':
+                elements.detectBtn.click();
+                break;
+            case 'humanize':
+                elements.humanizeBtn.click();
+                break;
+            case 'combined':
+                elements.combinedBtn.click();
+                break;
+        }
+    }
+    
+    // Tab navigation with number keys
+    if (e.key >= '1' && e.key <= '3' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        const tabIndex = parseInt(e.key) - 1;
+        const tabs = ['detect', 'humanize', 'combined'];
+        if (tabs[tabIndex]) {
+            switchTab(tabs[tabIndex]);
+        }
+    }
 });
