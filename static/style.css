@@ -136,9 +136,9 @@ body.battle-screen {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 15px;
+    padding: 10px;
     z-index: 1;
-    overflow-y: auto;
+    overflow: hidden;
 }
 
 /* ==========================================
@@ -146,7 +146,7 @@ body.battle-screen {
    ========================================== */
 .timer-container {
     position: absolute;
-    top: 20px;
+    top: 10px;
     left: 50%;
     transform: translateX(-50%);
     z-index: 100;
@@ -156,11 +156,11 @@ body.battle-screen {
     position: relative;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     background: linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(139, 92, 246, 0.15));
     border: 2px solid;
     border-image: linear-gradient(135deg, #00d4ff 0%, #a855f7 50%, #ff4b4b 100%) 1;
-    padding: 10px 20px;
+    padding: 6px 14px;
     clip-path: polygon(8% 0, 100% 0, 92% 100%, 0 100%);
     box-shadow: 
         0 0 30px rgba(168, 85, 247, 0.6),
@@ -169,28 +169,28 @@ body.battle-screen {
 }
 
 .timer-icon {
-    width: 20px;
-    height: 20px;
+    width: 16px;
+    height: 16px;
     color: var(--color-accent);
     animation: pulse 2s infinite;
 }
 
 .timer-display {
     font-family: var(--font-display);
-    font-size: 2.5rem;
+    font-size: 1.8rem;
     font-weight: 900;
     color: var(--color-text-primary);
     text-shadow: 0 0 20px rgba(255, 255, 255, 0.8), 0 0 10px rgba(168, 85, 247, 0.6);
-    min-width: 70px;
+    min-width: 55px;
     text-align: center;
-    letter-spacing: 2px;
+    letter-spacing: 1.5px;
 }
 
 .timer-label {
-    font-size: 0.85rem;
+    font-size: 0.75rem;
     color: var(--color-text-secondary);
     font-weight: 900;
-    letter-spacing: 1.5px;
+    letter-spacing: 1.2px;
 }
 
 .timer-display.warning {
@@ -212,8 +212,8 @@ body.battle-screen {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 30px;
-    margin-top: 70px;
+    gap: 20px;
+    margin-top: 50px;
     position: relative;
 }
 
@@ -221,7 +221,7 @@ body.battle-screen {
     flex: 1;
     display: flex;
     align-items: center;
-    gap: 20px;
+    gap: 15px;
 }
 
 .boss-section {
@@ -234,8 +234,8 @@ body.battle-screen {
    ========================================== */
 .avatar-container {
     position: relative;
-    width: 120px;
-    height: 120px;
+    width: 90px;
+    height: 90px;
     flex-shrink: 0;
 }
 
@@ -282,8 +282,8 @@ body.battle-screen {
 }
 
 .avatar-icon {
-    width: 60px;
-    height: 60px;
+    width: 45px;
+    height: 45px;
     color: var(--color-player);
     filter: drop-shadow(0 0 20px var(--color-player-glow));
     animation: icon-float 3s ease-in-out infinite;
@@ -355,21 +355,21 @@ body.battle-screen {
 }
 
 .combatant-label {
-    font-size: 0.75rem;
+    font-size: 0.65rem;
     font-weight: 900;
     color: var(--color-accent);
     text-transform: uppercase;
-    letter-spacing: 2px;
+    letter-spacing: 1.5px;
     text-shadow: 0 0 8px rgba(168, 85, 247, 0.5);
 }
 
 .combatant-name {
     font-family: var(--font-display);
-    font-size: 1.4rem;
+    font-size: 1.1rem;
     font-weight: 900;
     color: var(--color-text-primary);
     text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
-    letter-spacing: 1.5px;
+    letter-spacing: 1.2px;
 }
 
 .hp-container {
@@ -380,12 +380,12 @@ body.battle-screen {
 
 .hp-percentage {
     font-family: var(--font-display);
-    font-size: 1.1rem;
+    font-size: 0.95rem;
     font-weight: 900;
     color: var(--color-player);
     text-shadow: 0 0 12px var(--color-player-glow);
     text-align: right;
-    letter-spacing: 1px;
+    letter-spacing: 0.8px;
 }
 
 .boss-hp {
@@ -399,7 +399,7 @@ body.battle-screen {
    ========================================== */
 .hp-bar-wrapper {
     position: relative;
-    height: 32px;
+    height: 26px;
     background: rgba(0, 0, 0, 0.8);
     border: 2px solid var(--color-player);
     clip-path: polygon(1% 0, 100% 0, 99% 100%, 0 100%);
@@ -488,8 +488,8 @@ body.battle-screen {
    ========================================== */
 .vs-badge {
     position: relative;
-    width: 100px;
-    height: 75px;
+    width: 75px;
+    height: 55px;
     flex-shrink: 0;
     display: flex;
     align-items: center;
@@ -509,11 +509,11 @@ body.battle-screen {
 
 .vs-badge span {
     font-family: var(--font-display);
-    font-size: 2rem;
+    font-size: 1.5rem;
     font-weight: 900;
     color: white;
     text-shadow: 0 0 25px rgba(0, 0, 0, 0.9), 0 0 15px rgba(168, 85, 247, 0.8);
-    letter-spacing: 2px;
+    letter-spacing: 1.5px;
 }
 
 /* ==========================================
@@ -522,13 +522,13 @@ body.battle-screen {
 .question-panel {
     width: 100%;
     max-width: 900px;
-    margin: 25px auto 15px;
+    margin: 15px auto 10px;
     background: linear-gradient(135deg, rgba(88, 28, 135, 0.3), rgba(76, 29, 149, 0.3));
     border: 2px solid;
     border-image: linear-gradient(135deg, #00d4ff 0%, #a855f7 50%, #ff4b4b 100%) 1;
     border-radius: 0;
     clip-path: polygon(2% 0, 100% 0, 98% 100%, 0 100%);
-    padding: 18px 24px;
+    padding: 12px 18px;
     box-shadow: 
         0 0 40px rgba(168, 85, 247, 0.5),
         inset 0 0 30px rgba(168, 85, 247, 0.15);
@@ -538,15 +538,15 @@ body.battle-screen {
 .question-header {
     display: flex;
     align-items: center;
-    gap: 12px;
-    margin-bottom: 16px;
-    padding-bottom: 12px;
+    gap: 10px;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
     border-bottom: 1px solid rgba(168, 85, 247, 0.3);
 }
 
 .question-icon {
-    width: 26px;
-    height: 26px;
+    width: 22px;
+    height: 22px;
     color: var(--color-accent);
     filter: drop-shadow(0 0 15px rgba(168, 85, 247, 0.8));
     animation: pulse 2s ease-in-out infinite;
@@ -554,20 +554,20 @@ body.battle-screen {
 
 .question-title {
     font-family: var(--font-display);
-    font-size: 1rem;
+    font-size: 0.85rem;
     font-weight: 900;
     color: var(--color-text-primary);
-    letter-spacing: 2px;
+    letter-spacing: 1.5px;
     flex: 1;
 }
 
 .pause-menu {
-    font-size: 1.8rem;
+    font-size: 1.4rem;
     font-weight: 900;
     color: var(--color-text-secondary);
     cursor: pointer;
     transition: all 0.3s;
-    letter-spacing: 2px;
+    letter-spacing: 1.5px;
 }
 
 .pause-menu:hover {
@@ -577,16 +577,16 @@ body.battle-screen {
 }
 
 .question-content {
-    font-size: 1.6rem;
+    font-size: 1.3rem;
     font-weight: 500;
     color: var(--color-text-primary);
     text-align: center;
-    min-height: 70px;
+    min-height: 55px;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 18px;
-    line-height: 1.5;
+    padding: 12px;
+    line-height: 1.4;
 }
 
 .question-content p {
@@ -598,18 +598,18 @@ body.battle-screen {
    ========================================== */
 .answer-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
     max-width: 900px;
     margin: 0 auto;
-    padding: 15px;
+    padding: 10px;
 }
 
 .option-btn {
     position: relative;
-    padding: 18px 24px;
+    padding: 14px 18px;
     font-family: var(--font-primary);
-    font-size: 1.3rem;
+    font-size: 1.1rem;
     font-weight: 700;
     color: var(--color-text-primary);
     background: linear-gradient(135deg, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.3));
@@ -748,18 +748,18 @@ body.battle-screen {
 .action-buttons {
     display: flex;
     justify-content: center;
-    gap: 20px;
-    margin: 20px 0;
+    gap: 15px;
+    margin: 12px 0;
 }
 
 .action-btn {
     position: relative;
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 16px 40px;
+    gap: 8px;
+    padding: 12px 30px;
     font-family: var(--font-display);
-    font-size: 1.2rem;
+    font-size: 1rem;
     font-weight: 900;
     color: white;
     background: linear-gradient(135deg, #f59e0b, #ea580c);
@@ -771,7 +771,7 @@ body.battle-screen {
         0 0 25px rgba(245, 158, 11, 0.6),
         inset 0 0 15px rgba(255, 255, 255, 0.25);
     text-transform: uppercase;
-    letter-spacing: 1.5px;
+    letter-spacing: 1.2px;
 }
 
 .action-btn:hover:not(:disabled) {
@@ -788,7 +788,7 @@ body.battle-screen {
 }
 
 .btn-icon {
-    font-size: 1.6rem;
+    font-size: 1.3rem;
 }
 
 .continue-btn {
@@ -810,14 +810,14 @@ body.battle-screen {
    ========================================== */
 .heal-btn {
     position: fixed;
-    top: 20px;
-    right: 20px;
+    top: 10px;
+    right: 10px;
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 12px 22px;
+    gap: 6px;
+    padding: 8px 16px;
     font-family: var(--font-display);
-    font-size: 0.95rem;
+    font-size: 0.8rem;
     font-weight: 900;
     color: white;
     background: linear-gradient(135deg, #00d4ff, #0ea5e9);
@@ -830,12 +830,12 @@ body.battle-screen {
         inset 0 0 20px rgba(255, 255, 255, 0.25);
     z-index: 100;
     text-transform: uppercase;
-    letter-spacing: 1.5px;
+    letter-spacing: 1.2px;
 }
 
 .heal-btn svg {
-    width: 20px;
-    height: 20px;
+    width: 16px;
+    height: 16px;
     filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.8));
 }
 
@@ -862,12 +862,12 @@ body.battle-screen {
 .feedback-area {
     text-align: center;
     font-family: var(--font-display);
-    font-size: 1.6rem;
+    font-size: 1.2rem;
     font-weight: 900;
-    min-height: 45px;
-    margin: 12px 0;
+    min-height: 35px;
+    margin: 8px 0;
     text-shadow: 0 0 15px rgba(0, 0, 0, 0.9);
-    letter-spacing: 1px;
+    letter-spacing: 0.8px;
 }
 
 /* ==========================================
