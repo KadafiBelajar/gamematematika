@@ -439,82 +439,87 @@ def _solve_rasionalisasi_beda_akar(f, x, point):
 
 def _solve_trigonometri(f, x, point):
     """
-    REVISED: Memberikan penjelasan langkah demi langkah untuk soal trigonometri,
-    terutama yang memerlukan substitusi variabel (Level 10).
+    FINAL REVISION: Memberikan penjelasan langkah demi langkah yang cerdas.
+    Mendeteksi pola substitusi di pembilang ATAU penyebut.
     """
-    from sympy import pi, numer, denom, factor
-    
-    # --- Cek apakah soal ini cocok dengan pola substitusi ---
-    # Pola: sin(ax) / (b(x-c)) atau tan(ax) / (b(x-c))
-    num, den = f.as_numer_denom()
-    is_substitution_pattern = (
-        point != 0 and
-        (num.func == sin or num.func == tan) and
-        len(num.args) == 1 and
-        len(den.args) == 2 # Harus perkalian, misal: 15 * (x - 2*pi)
-    )
+    # Jangan proses jika limit menuju 0, gunakan fallback
+    if point == 0:
+        pass # Akan ditangani oleh fallback di akhir
 
-    if is_substitution_pattern:
+    # --- Pola Pengerjaan Detail untuk Substitusi (x -> c) ---
+    else:
         try:
-            # --- Implementasi Template Pengerjaan Langkah-demi-Langkah ---
-            a_coeff = num.args[0].as_coeff_mul()[0]
-            
-            # Ekstrak koefisien dan faktor dari penyebut
-            den_factored = factor(den)
-            b_coeff = S.One
-            x_minus_c_part = S.One
+            num, den = f.as_numer_denom()
+            trig_part, linear_part = (None, None)
+            trig_in_num = False
 
-            if den_factored.is_Mul:
-                for arg in den_factored.args:
-                    if arg.is_Number:
-                        b_coeff = arg
-                    else:
-                        x_minus_c_part = arg
-            else: # Jika penyebut tidak dalam bentuk perkalian (misal: x - pi)
-                b_coeff = S.One
-                x_minus_c_part = den_factored
+            # Deteksi cerdas: cari bagian trigonometri dan bagian linear
+            if (num.func in [sin, tan] or (num.is_Mul and any(arg.func in [sin, tan] for arg in num.args))) and Poly(den, x).degree() == 1:
+                trig_part, linear_part = num, den
+                trig_in_num = True
+            elif (den.func in [sin, tan] or (den.is_Mul and any(arg.func in [sin, tan] for arg in den.args))) and Poly(num, x).degree() == 1:
+                trig_part, linear_part = den, num
+                trig_in_num = False
+            else:
+                # Jika pola tidak cocok, lempar error untuk masuk ke blok except
+                raise ValueError("Bukan pola substitusi sederhana")
 
-            # Validasi akhir pola
-            if x_minus_c_part != (x - point):
-                 raise ValueError("Pola tidak cocok setelah faktorisasi")
-
-            calc_steps = []
+            # --- Implementasi Template Pengerjaan ---
             point_latex = latex(point)
+            calc_steps = []
             
-            # Langkah 1: Faktorkan Penyebut
-            explanation_text = "Substitusi langsung menghasilkan 0/0. Kita perlu memfaktorkan penyebut dan melakukan substitusi variabel."
-            calc_steps.append(rf"\lim_{{x \to {point_latex}}} \frac{{{latex(num)}}}{{{latex(factor(den))}}}")
+            # Langkah 1: Faktorkan Pembilang dan Penyebut
+            explanation_text = "Substitusi langsung menghasilkan 0/0. Kita faktorkan ekspresi dan lakukan substitusi variabel."
+            num_factored = factor(num)
+            den_factored = factor(den)
+            calc_steps.append(rf"\lim_{{x \to {point_latex}}} \frac{{{latex(num_factored)}}}{{{latex(den_factored)}}}")
 
             # Langkah 2: Substitusi Variabel
             y = Symbol('y')
             calc_steps.append(r"\\ \text{Misalkan } y = " + latex(x-point) + r", \text{ sehingga } x = y + " + point_latex)
             calc_steps.append(r"\text{Ketika } x \to " + point_latex + r", \text{ maka } y \to 0.")
             
-            num_substituted = num.subs(x, y + point)
-            calc_steps.append(rf"\lim_{{y \to 0}} \frac{{{latex(num_substituted)}}}{{{latex(b_coeff * y)}}}")
+            f_in_y = f.subs(x, y + point)
+            # Sederhanakan argumen di dalam sin/tan, misal tan(15(y+10)-150) -> tan(15y)
+            f_in_y = simplify(f_in_y)
+            calc_steps.append(rf"\lim_{{y \to 0}} {latex(f_in_y)}")
 
-            # Langkah 3: Gunakan Sifat Periodisitas
-            # Sederhanakan argumen sin/tan, misal sin(6y + 12*pi) -> sin(6y)
-            num_simplified_arg = num.func(a_coeff * y)
-            if num_substituted != num_simplified_arg:
-                calc_steps.append(r"\\ \text{Gunakan sifat periodisitas: } " + latex(num_substituted) + " = " + latex(num_simplified_arg))
-                calc_steps.append(rf"\lim_{{y \to 0}} \frac{{{latex(num_simplified_arg)}}}{{{latex(b_coeff * y)}}}")
+            # Langkah 3: Gunakan Sifat Periodisitas (jika ada, seperti sin(6y+12pi))
+            num_y, den_y = f_in_y.as_numer_denom()
+            # Logika ini menyederhanakan sin(ay + k*pi) menjadi sin(ay) atau -sin(ay)
+            simplified_f_in_y = trigsimp(f_in_y)
+
+            if latex(simplified_f_in_y) != latex(f_in_y):
+                calc_steps.append(r"\\ \text{Dengan sifat periodisitas/identitas, menjadi:}")
+                calc_steps.append(rf"\lim_{{y \to 0}} {latex(simplified_f_in_y)}")
 
             # Langkah 4 & 5: Selesaikan Limit Dasar dan Hasil Akhir
-            final_answer = limit(f, x, point)
-            calc_steps.append(rf"&= \frac{{{latex(a_coeff)}}}{{{latex(b_coeff)}}}")
+            hasil_akhir = limit(f, x, point)
             
-            if final_answer != Rational(a_coeff, b_coeff):
-                calc_steps.append(f"&= {latex(final_answer)}")
+            # Ekstrak koefisien dari bentuk yang sudah disederhanakan
+            num_final, den_final = simplified_f_in_y.as_numer_denom()
+            
+            coeff_num = num_final.as_coeff_mul()[0] if num_final.as_coeff_mul()[1] == y else num_final.args[0].as_coeff_mul()[0]
+            coeff_den_arg = den_final.args[0] if den_final.func in [sin, tan] else den_final
+            coeff_den = coeff_den_arg.as_coeff_mul()[0]
+
+            # Atur rasio berdasarkan posisi
+            if trig_in_num:
+                calc_steps.append(rf"&= \frac{{{latex(coeff_num)}}}{{{latex(coeff_den)}}}")
+            else:
+                calc_steps.append(rf"&= \frac{{{latex(coeff_num)}}}{{{latex(coeff_den)}}}")
+
+            if hasil_akhir != Rational(coeff_num, coeff_den):
+                 calc_steps.append(f"&= {latex(hasil_akhir)}")
 
             calculation_latex = "\\begin{aligned}" + " \\\\ ".join(calc_steps) + "\\end{aligned}"
             return explanation_text, calculation_latex
 
         except Exception:
-            # Jika terjadi error saat memproses, kembali ke metode simpel
+            # Jika pola tidak cocok atau ada error, akan jatuh ke fallback di bawah
             pass
 
-    # --- Fallback: Metode Penjelasan Simpel (untuk soal x->0 atau pola lain) ---
+    # --- Fallback: Metode Penjelasan Simpel (untuk soal x->0 atau pola lain yang tidak terdeteksi) ---
     explanation_text = r"Penyelesaian untuk limit trigonometri."
     hasil_akhir = limit(f, x, point)
     calc_steps = [rf"\lim_{{x \to {point}}} {latex(f)}", f"&= {latex(hasil_akhir)}"]
