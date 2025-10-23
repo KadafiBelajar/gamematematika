@@ -17,7 +17,8 @@ def index():
 @app.route("/stages")
 def stage_select():
     """Menampilkan halaman pemilihan stage."""
-    return render_template("stage_select.html")
+    dev_mode_on = session.get('dev_mode', False)
+    return render_template("stage_select.html", dev_mode_on=dev_mode_on)
 
 @app.route("/levels/<stage_name>")
 def level_select(stage_name):
@@ -42,8 +43,9 @@ def level_select(stage_name):
     for i in range(1, 16):
         state = 'unlocked' if i <= unlocked_until else 'locked'
         levels_data.append({'number': i, 'state': state})
-        
-    return render_template("level_select.html", levels=levels_data, stage_name=stage_name)
+    
+    dev_mode_on = session.get('dev_mode', False)
+    return render_template("level_select.html", levels=levels_data, stage_name=stage_name, dev_mode_on=dev_mode_on)
 
 @app.route("/main/<stage_name>/<int:level_num>")
 def main_game(stage_name, level_num):
@@ -154,29 +156,39 @@ def api_handle_answer():
 
 # --- Developer Endpoint ---
 
-@app.route("/api/dev/unlock-all", methods=["POST"])
-def dev_unlock_all():
-    """Endpoint khusus developer untuk membuka semua level dan stage."""
-    if 'progress' not in session:
-        session['progress'] = {}
+@app.route("/api/dev/toggle-dev-mode", methods=["POST"])
+def toggle_dev_mode():
+    """Toggle Developer Mode: backup progress asli atau kembalikan."""
+    # Cek status dev mode saat ini
+    dev_mode_on = session.get('dev_mode', False)
     
-    # Buka semua level untuk semua stage
-    session['progress']['limit'] = 15
-    session['progress']['turunan'] = 15
-    session['progress']['integral'] = 15
-    session.modified = True
-    
-    # Juga aktifkan kartu stage yang nonaktif di frontend
-    return jsonify({"message": "Semua level dan stage telah dibuka untuk testing!"})
-
-@app.route("/api/dev/reset-progress", methods=["POST"])
-def dev_reset_progress():
-    """Endpoint khusus developer untuk reset progress ke awal."""
-    # Reset progress ke level 1 saja yang terbuka
-    session['progress'] = {'limit': 1, 'turunan': 1, 'integral': 1}
-    session.modified = True
-    
-    return jsonify({"message": "Progress telah direset! Hanya level 1 yang terbuka."})
+    if not dev_mode_on:
+        # Nyalakan dev mode: backup progress asli
+        if 'progress' not in session:
+            session['progress'] = {'limit': 1, 'turunan': 1, 'integral': 1}
+        
+        # Simpan progress asli
+        session['real_progress'] = session['progress'].copy()
+        
+        # Unlock semua level
+        session['progress'] = {'limit': 15, 'turunan': 15, 'integral': 15}
+        session['dev_mode'] = True
+        session.modified = True
+        
+        return jsonify({"message": "Developer Mode diaktifkan! Semua level terbuka.", "dev_mode": True})
+    else:
+        # Matikan dev mode: kembalikan progress asli
+        if 'real_progress' in session:
+            session['progress'] = session['real_progress'].copy()
+            session.pop('real_progress', None)
+        else:
+            # Fallback jika real_progress tidak ada
+            session['progress'] = {'limit': 1, 'turunan': 1, 'integral': 1}
+        
+        session['dev_mode'] = False
+        session.modified = True
+        
+        return jsonify({"message": "Developer Mode dinonaktifkan! Progress dikembalikan.", "dev_mode": False})
 
 
 if __name__ == "__main__":
