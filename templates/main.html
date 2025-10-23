@@ -2,8 +2,10 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Main Gameplay</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Battle Screen - Level {{ level_num }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;500;700&display=swap" rel="stylesheet">
     <script>
       MathJax = {
         tex: { inlineMath: [['$', '$']], displayMath: [['$$', '$$']] },
@@ -11,76 +13,170 @@
       };
     </script>
     <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" id="MathJax-script"></script>
-    <script src="{{ url_for('static', filename='main.js') }}?v=FIXEDV2" defer></script>
-    <style>
-        /* CRITICAL FIX: Pastikan overlay benar-benar tersembunyi */
-        .overlay.hidden {
-            display: none !important;
-            visibility: hidden !important;
-            opacity: 0 !important;
-        }
-        
-        /* Overlay visible */
-        .overlay {
-            display: flex !important;
-            visibility: visible !important;
-            opacity: 1 !important;
-        }
-    </style>
+    <script src="{{ url_for('static', filename='main.js') }}?v=BATTLE_V3" defer></script>
 </head>
-<body>
+<body class="battle-screen">
+    <!-- Animated Background -->
+    <div class="battle-background">
+        <div class="stars-layer"></div>
+        <div class="particles-layer" id="particles-container"></div>
+    </div>
+
     <div class="fight-container" data-stage-name="{{ stage_name }}" data-level-num="{{ level_num }}">
         
-        <div class="fight-ui">
-            <div class="hud player-hud">
-                <div class="hud-info">
-                    <span class="hud-name">Player</span>
-                    <span id="player-hp-text" class="hud-hp-text">100 / 100</span>
-                </div>
-                <div class="hp-bar">
-                    <div id="player-hp-bar" class="hp-bar-inner player" style="width: 100%;"></div>
-                </div>
-            </div>
-
-            <div id="timer-display" class="timer-display">60</div>
-
-            <div class="hud boss-hud">
-                 <div class="hud-info">
-                    <span class="hud-name">Boss</span>
-                    <span id="boss-hp-text" class="hud-hp-text">100 / 100</span>
-                </div>
-                <div class="hp-bar">
-                    <div id="boss-hp-bar" class="hp-bar-inner boss" style="width: 100%;"></div>
-                </div>
-            </div>
-        </div>
-        
-        <div id="game-content">
-            <h1 style="margin: 0; padding: 0;">Level {{ level_num }}</h1>
-            <div id="question-area"><p>Memuat...</p></div>
-            <div id="options-container" class="options-grid"></div>
-            <button id="submit-btn" disabled>Serang!</button>
-            <div id="feedback-area"></div>
-            <button id="continue-btn" class="hidden">Lanjutkan</button>
-        </div>
-
-        <!-- GAME OVER OVERLAY - HARUS HIDDEN BY DEFAULT -->
-        <div id="game-over-overlay" class="overlay hidden" style="display: none;">
-            <div class="overlay-content">
-                <h2>Game Over</h2>
-                <button id="retry-btn">Try Again</button>
-                <a href="{{ url_for('index') }}" class="button-link">Back to Main Menu</a>
+        <!-- Timer di tengah atas -->
+        <div class="timer-container">
+            <div class="timer-frame">
+                <svg class="timer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M12 6v6l4 2"/>
+                </svg>
+                <span id="timer-display" class="timer-display">90</span>
+                <span class="timer-label">SEC</span>
             </div>
         </div>
 
-        <!-- VICTORY OVERLAY - HARUS HIDDEN BY DEFAULT -->
-        <div id="victory-overlay" class="overlay hidden" style="display: none;">
-            <div class="overlay-content">
-                <h2>You Win!</h2>
-                <p>Level Cleared!</p>
-                <a href="{{ url_for('level_select', stage_name=stage_name) }}" class="button-link">Back to Level Select</a>
+        <!-- Battle HUD -->
+        <div class="battle-hud">
+            <!-- Player Section -->
+            <div class="combatant-section player-section">
+                <div class="avatar-container player-avatar" id="player-avatar">
+                    <div class="avatar-glow"></div>
+                    <div class="avatar-frame">
+                        <svg viewBox="0 0 100 100" class="avatar-icon">
+                            <path d="M50 10 L90 90 L10 90 Z" fill="currentColor"/>
+                            <circle cx="50" cy="40" r="15" fill="rgba(0,0,0,0.3)"/>
+                        </svg>
+                    </div>
+                    <div class="avatar-border"></div>
+                </div>
+                <div class="hp-section">
+                    <div class="combatant-info">
+                        <span class="combatant-label">PLAYER</span>
+                        <span class="combatant-name">Mathius</span>
+                    </div>
+                    <div class="hp-container">
+                        <span class="hp-percentage" id="player-hp-text">100%</span>
+                        <div class="hp-bar-wrapper">
+                            <div class="hp-bar-bg"></div>
+                            <div id="player-hp-bar" class="hp-bar-fill player" style="width: 100%;">
+                                <div class="hp-bar-shine"></div>
+                            </div>
+                            <div class="hp-bar-border"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VS Badge -->
+            <div class="vs-badge">
+                <span>VS</span>
+            </div>
+
+            <!-- Boss Section -->
+            <div class="combatant-section boss-section">
+                <div class="hp-section">
+                    <div class="combatant-info boss-info">
+                        <span class="combatant-label">BOSS</span>
+                        <span class="combatant-name">Calculus Demon</span>
+                    </div>
+                    <div class="hp-container">
+                        <span class="hp-percentage boss-hp" id="boss-hp-text">100%</span>
+                        <div class="hp-bar-wrapper boss-hp-wrapper">
+                            <div class="hp-bar-bg"></div>
+                            <div id="boss-hp-bar" class="hp-bar-fill boss" style="width: 100%;">
+                                <div class="hp-bar-shine"></div>
+                            </div>
+                            <div class="hp-bar-border"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="avatar-container boss-avatar" id="boss-avatar">
+                    <div class="avatar-glow boss-glow"></div>
+                    <div class="avatar-frame boss-frame">
+                        <svg viewBox="0 0 100 100" class="avatar-icon">
+                            <circle cx="50" cy="35" r="20" fill="currentColor"/>
+                            <path d="M30 60 Q50 45 70 60 L65 80 Q50 70 35 80 Z" fill="currentColor"/>
+                            <circle cx="42" cy="32" r="4" fill="rgba(255,50,50,0.8)"/>
+                            <circle cx="58" cy="32" r="4" fill="rgba(255,50,50,0.8)"/>
+                        </svg>
+                    </div>
+                    <div class="avatar-border boss-border"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question Panel -->
+        <div class="question-panel">
+            <div class="question-header">
+                <svg class="question-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"/>
+                </svg>
+                <span class="question-title">SOLVE THE EQUATION</span>
+                <div class="pause-menu" id="pause-menu">|||</div>
+            </div>
+            <div id="question-area" class="question-content">
+                <p>Memuat soal...</p>
+            </div>
+        </div>
+
+        <!-- Answer Options -->
+        <div id="options-container" class="answer-grid"></div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <button id="submit-btn" class="action-btn attack-btn" disabled>
+                <span class="btn-icon">⚔️</span>
+                <span class="btn-text">SERANG!</span>
+            </button>
+            <button id="continue-btn" class="action-btn continue-btn hidden">
+                <span class="btn-icon">➤</span>
+                <span class="btn-text">LANJUTKAN</span>
+            </button>
+        </div>
+
+        <!-- Feedback Area -->
+        <div id="feedback-area" class="feedback-area"></div>
+
+        <!-- Heal Button -->
+        <button id="heal-btn" class="heal-btn" title="Heal (+25 HP)">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+            </svg>
+            <span>HEAL</span>
+        </button>
+
+        <!-- GAME OVER OVERLAY -->
+        <div id="game-over-overlay" class="overlay hidden">
+            <div class="overlay-content defeat">
+                <h2 class="overlay-title defeat-title">DEFEAT</h2>
+                <p class="overlay-message">You have been overwhelmed...</p>
+                <div class="overlay-buttons">
+                    <button id="retry-btn" class="overlay-btn retry-btn">
+                        <span>↻</span> TRY AGAIN
+                    </button>
+                    <a href="{{ url_for('level_select', stage_name=stage_name) }}" class="overlay-btn menu-btn">
+                        <span>☰</span> LEVEL SELECT
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- VICTORY OVERLAY -->
+        <div id="victory-overlay" class="overlay hidden">
+            <div class="overlay-content victory">
+                <h2 class="overlay-title victory-title">VICTORY!</h2>
+                <p class="overlay-message">You have conquered the demon!</p>
+                <div class="overlay-buttons">
+                    <a href="{{ url_for('level_select', stage_name=stage_name) }}" class="overlay-btn continue-menu-btn">
+                        <span>→</span> CONTINUE
+                    </a>
+                </div>
             </div>
         </div>
     </div>
+
+    <!-- Attack Effects -->
+    <div id="attack-effects"></div>
 </body>
 </html>
