@@ -2,28 +2,185 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Game Matematika: Limit</title>
+    <title>Nowled - Game Matematika</title>
     
-    <!-- TAMBAHKAN BAGIAN INI -->
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    <!-- -------------------- -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- MathJax -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            }
+        };
+    </script>
 
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-<body>
-    <div class="container">
-        <h1>Nowled</h1>
-        <p>Pilih mode untuk memulai!</p>
-        <div class="menu">
-            <a href="{{ url_for('stage_select') }}" class="menu-card">
-                <h2>Play Mode</h2>
-            </a>
-            <a href="{{ url_for('learn') }}" class="menu-card">
-                <h2>Training Mode</h2>
-            </a>
+<body class="battle-screen">
+    <!-- Battle Background -->
+    <div class="battle-background">
+        <div class="stars-layer"></div>
+        <div class="particles-layer" id="particles-container"></div>
+    </div>
+
+    <!-- Fight Container -->
+    <div class="fight-container">
+        <!-- Timer -->
+        <div class="timer-container">
+            <div class="timer-frame">
+                <div class="timer-icon">⏱</div>
+                <div class="timer-display" id="timer-display">90</div>
+                <div class="timer-label">SEC</div>
+            </div>
+        </div>
+
+        <!-- Battle HUD -->
+        <div class="battle-hud">
+            <!-- Player Section -->
+            <div class="combatant-section">
+                <div class="avatar-container" id="player-avatar">
+                    <div class="avatar-glow"></div>
+                    <div class="avatar-frame">
+                        <div class="avatar-icon">⚔️</div>
+                    </div>
+                    <div class="avatar-border"></div>
+                </div>
+                <div class="hp-section">
+                    <div class="combatant-info">
+                        <div class="combatant-label">Player</div>
+                        <div class="combatant-name">Hero</div>
+                    </div>
+                    <div class="hp-container">
+                        <div class="hp-percentage" id="player-hp-text">100%</div>
+                        <div class="hp-bar-wrapper">
+                            <div class="hp-bar-bg"></div>
+                            <div class="hp-bar-fill" id="player-hp-bar" style="width: 100%;">
+                                <div class="hp-bar-shine"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VS Badge -->
+            <div class="vs-badge">
+                <span>VS</span>
+            </div>
+
+            <!-- Boss Section -->
+            <div class="combatant-section boss-section">
+                <div class="hp-section">
+                    <div class="combatant-info boss-info">
+                        <div class="combatant-label">Boss</div>
+                        <div class="combatant-name">Limit Monster</div>
+                    </div>
+                    <div class="hp-container">
+                        <div class="hp-percentage boss-hp" id="boss-hp-text">100%</div>
+                        <div class="hp-bar-wrapper boss-hp-wrapper">
+                            <div class="hp-bar-bg"></div>
+                            <div class="hp-bar-fill boss" id="boss-hp-bar" style="width: 100%;">
+                                <div class="hp-bar-shine"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="avatar-container" id="boss-avatar">
+                    <div class="avatar-glow boss-glow"></div>
+                    <div class="avatar-frame boss-frame">
+                        <div class="avatar-icon">👹</div>
+                    </div>
+                    <div class="avatar-border boss-border"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question Panel -->
+        <div class="question-panel">
+            <div class="question-header">
+                <div class="question-icon">❓</div>
+                <div class="question-title">MATH CHALLENGE</div>
+                <div class="pause-menu">⏸</div>
+            </div>
+            <div class="question-content" id="question-area">
+                <p>Klik "Mulai" untuk memulai pertarungan!</p>
+            </div>
+        </div>
+
+        <!-- Answer Options -->
+        <div class="answer-grid" id="options-container">
+            <!-- Options will be dynamically generated -->
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <button class="action-btn continue-btn hidden" id="continue-btn">
+                <span class="btn-icon">▶</span>
+                <span>Lanjut</span>
+            </button>
+            <button class="action-btn" id="submit-btn" disabled>
+                <span class="btn-icon">⚡</span>
+                <span>Serang</span>
+            </button>
+        </div>
+
+        <!-- Feedback Area -->
+        <div class="feedback-area" id="feedback-area"></div>
+
+        <!-- Heal Button -->
+        <button class="heal-btn" id="heal-btn">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+            <span>HEAL (3)</span>
+        </button>
+
+        <!-- Attack Effects Container -->
+        <div id="attack-effects"></div>
+    </div>
+
+    <!-- Game Over Overlay -->
+    <div class="overlay hidden" id="game-over-overlay">
+        <div class="overlay-content">
+            <div class="overlay-title defeat-title">DEFEAT</div>
+            <div class="overlay-message">Kamu kalah! Coba lagi untuk mengalahkan boss!</div>
+            <div class="overlay-buttons">
+                <button class="overlay-btn retry-btn" id="retry-btn">
+                    <span>🔄</span>
+                    <span>Coba Lagi</span>
+                </button>
+                <a href="{{ url_for('stage_select') }}" class="overlay-btn menu-btn">
+                    <span>🏠</span>
+                    <span>Menu</span>
+                </a>
+            </div>
         </div>
     </div>
+
+    <!-- Victory Overlay -->
+    <div class="overlay hidden" id="victory-overlay">
+        <div class="overlay-content">
+            <div class="overlay-title victory-title">VICTORY</div>
+            <div class="overlay-message">Selamat! Kamu berhasil mengalahkan boss!</div>
+            <div class="overlay-buttons">
+                <a href="{{ url_for('stage_select') }}" class="overlay-btn continue-menu-btn">
+                    <span>▶</span>
+                    <span>Lanjut</span>
+                </a>
+                <a href="{{ url_for('stage_select') }}" class="overlay-btn menu-btn">
+                    <span>🏠</span>
+                    <span>Menu</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='main.js') }}"></script>
 </body>
 </html>
