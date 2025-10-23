@@ -1,5 +1,27 @@
 // Lokasi: static/main.js - WITH LEVEL UNLOCK SYSTEM
 
+// --- Event Listener untuk Toggle Developer Mode ---
+document.addEventListener('DOMContentLoaded', () => {
+    const devToggle = document.getElementById('dev-mode-toggle');
+    if (devToggle) {
+        devToggle.addEventListener('change', async function() {
+            try {
+                const response = await fetch('/api/dev/toggle-dev-mode', { 
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const result = await response.json();
+                // Reload halaman untuk melihat perubahan
+                location.reload();
+            } catch (error) {
+                console.error('Error toggling dev mode:', error);
+                alert('Gagal mengubah Developer Mode');
+            }
+        });
+    }
+});
+
+// --- Game Logic (hanya untuk halaman main.html) ---
 document.addEventListener('DOMContentLoaded', () => {
     // --- State & UI Elements ---
     let playerHP;
