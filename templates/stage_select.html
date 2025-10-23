@@ -14,7 +14,11 @@
 </head>
 <body>
     <div class="dev-menu">
-        <i class="fas fa-tools" onclick="unlockAllLevels()"></i>
+        <label class="toggle-switch">
+            <input type="checkbox" id="dev-mode-toggle" {{ 'checked' if dev_mode_on else '' }}>
+            <span class="toggle-slider"></span>
+        </label>
+        <span class="dev-label">Dev Mode</span>
     </div>
     <div class="container">
         <a href="{{ url_for('index') }}" style="float: left;">Kembali ke Menu</a>
