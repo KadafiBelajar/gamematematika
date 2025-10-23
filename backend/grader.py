@@ -1,6 +1,6 @@
 from sympy import (
     sympify, limit, Symbol, sqrt, factor, cancel, expand, latex, oo,
-    sin, cos, tan, Poly, degree, numer, denom, Add, Mul, Pow, S
+    sin, cos, tan, Poly, degree, numer, denom, Add, Mul, Pow, S, Rational
 )
 
 def check_answer(user_answer, correct_answer):
@@ -438,6 +438,83 @@ def _solve_rasionalisasi_beda_akar(f, x, point):
     return explanation_text, calculation_latex
 
 def _solve_trigonometri(f, x, point):
+    """
+    REVISED: Memberikan penjelasan langkah demi langkah untuk soal trigonometri,
+    terutama yang memerlukan substitusi variabel (Level 10).
+    """
+    from sympy import pi, numer, denom, factor
+    
+    # --- Cek apakah soal ini cocok dengan pola substitusi ---
+    # Pola: sin(ax) / (b(x-c)) atau tan(ax) / (b(x-c))
+    num, den = f.as_numer_denom()
+    is_substitution_pattern = (
+        point != 0 and
+        (num.func == sin or num.func == tan) and
+        len(num.args) == 1 and
+        len(den.args) == 2 # Harus perkalian, misal: 15 * (x - 2*pi)
+    )
+
+    if is_substitution_pattern:
+        try:
+            # --- Implementasi Template Pengerjaan Langkah-demi-Langkah ---
+            a_coeff = num.args[0].as_coeff_mul()[0]
+            
+            # Ekstrak koefisien dan faktor dari penyebut
+            den_factored = factor(den)
+            b_coeff = S.One
+            x_minus_c_part = S.One
+
+            if den_factored.is_Mul:
+                for arg in den_factored.args:
+                    if arg.is_Number:
+                        b_coeff = arg
+                    else:
+                        x_minus_c_part = arg
+            else: # Jika penyebut tidak dalam bentuk perkalian (misal: x - pi)
+                b_coeff = S.One
+                x_minus_c_part = den_factored
+
+            # Validasi akhir pola
+            if x_minus_c_part != (x - point):
+                 raise ValueError("Pola tidak cocok setelah faktorisasi")
+
+            calc_steps = []
+            point_latex = latex(point)
+            
+            # Langkah 1: Faktorkan Penyebut
+            explanation_text = "Substitusi langsung menghasilkan 0/0. Kita perlu memfaktorkan penyebut dan melakukan substitusi variabel."
+            calc_steps.append(rf"\lim_{{x \to {point_latex}}} \frac{{{latex(num)}}}{{{latex(factor(den))}}}")
+
+            # Langkah 2: Substitusi Variabel
+            y = Symbol('y')
+            calc_steps.append(r"\\ \text{Misalkan } y = " + latex(x-point) + r", \text{ sehingga } x = y + " + point_latex)
+            calc_steps.append(r"\text{Ketika } x \to " + point_latex + r", \text{ maka } y \to 0.")
+            
+            num_substituted = num.subs(x, y + point)
+            calc_steps.append(rf"\lim_{{y \to 0}} \frac{{{latex(num_substituted)}}}{{{latex(b_coeff * y)}}}")
+
+            # Langkah 3: Gunakan Sifat Periodisitas
+            # Sederhanakan argumen sin/tan, misal sin(6y + 12*pi) -> sin(6y)
+            num_simplified_arg = num.func(a_coeff * y)
+            if num_substituted != num_simplified_arg:
+                calc_steps.append(r"\\ \text{Gunakan sifat periodisitas: } " + latex(num_substituted) + " = " + latex(num_simplified_arg))
+                calc_steps.append(rf"\lim_{{y \to 0}} \frac{{{latex(num_simplified_arg)}}}{{{latex(b_coeff * y)}}}")
+
+            # Langkah 4 & 5: Selesaikan Limit Dasar dan Hasil Akhir
+            final_answer = limit(f, x, point)
+            calc_steps.append(rf"&= \frac{{{latex(a_coeff)}}}{{{latex(b_coeff)}}}")
+            
+            if final_answer != Rational(a_coeff, b_coeff):
+                calc_steps.append(f"&= {latex(final_answer)}")
+
+            calculation_latex = "\\begin{aligned}" + " \\\\ ".join(calc_steps) + "\\end{aligned}"
+            return explanation_text, calculation_latex
+
+        except Exception:
+            # Jika terjadi error saat memproses, kembali ke metode simpel
+            pass
+
+    # --- Fallback: Metode Penjelasan Simpel (untuk soal x->0 atau pola lain) ---
     explanation_text = r"Penyelesaian untuk limit trigonometri."
     hasil_akhir = limit(f, x, point)
     calc_steps = [rf"\lim_{{x \to {point}}} {latex(f)}", f"&= {latex(hasil_akhir)}"]
