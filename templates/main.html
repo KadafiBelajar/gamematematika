@@ -4,48 +4,66 @@
     <meta charset="UTF-8">
     <title>Main Gameplay</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    
-    <!-- Script Konfigurasi MathJax -->
     <script>
       MathJax = {
-        tex: {
-          inlineMath: [['$', '$']],
-          displayMath: [['$$', '$$']]
-        },
-        svg: {
-          fontCache: 'global'
-        }
+        tex: { inlineMath: [['$', '$']], displayMath: [['$$', '$$']] },
+        svg: { fontCache: 'global' }
       };
     </script>
-    <!-- Script MathJax dimuat secara sinkron untuk memastikan siap sebelum main.js -->
     <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" id="MathJax-script"></script>
-    <!-- Script logika game kita, ditunda hingga setelah parsing HTML -->
-    <script src="{{ url_for('static', filename='main.js') }}" defer></script>
-
+    <script src="{{ url_for('static', filename='main.js') }}?v=FINALFIX" defer></script>
 </head>
 <body>
-    <div class="game-container" data-stage-name="{{ stage_name }}" data-level-num="{{ level_num }}">
-        <a href="{{ url_for('level_select', stage_name=stage_name) }}" style="float: left;">Kembali ke Level</a>
-        <h1>{{ stage_name|title }} - Level {{ level_num }}</h1>
+    <div class="fight-container" data-stage-name="{{ stage_name }}" data-level-num="{{ level_num }}">
         
-        <div id="question-area">
-            <p>Memuat soal...</p>
+        <div class="fight-ui">
+            <div class="hud player-hud">
+                <div class="hud-info">
+                    <span class="hud-name">Player</span>
+                    <span id="player-hp-text" class="hud-hp-text">100 / 100</span>
+                </div>
+                <div class="hp-bar">
+                    <div id="player-hp-bar" class="hp-bar-inner player"></div>
+                </div>
+            </div>
+
+            <div id="timer-display" class="timer-display">60</div>
+
+            <div class="hud boss-hud">
+                 <div class="hud-info">
+                    <span class="hud-name">Boss</span>
+                    <span id="boss-hp-text" class="hud-hp-text">100 / 100</span>
+                </div>
+                <div class="hp-bar">
+                    <div id="boss-hp-bar" class="hp-bar-inner boss"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="game-content">
+            <h1 style="margin: 0; padding: 0;">Level {{ level_num }}</h1>
+            <div id="question-area"><p>Memuat...</p></div>
+            <div id="options-container" class="options-grid"></div>
+            <button id="submit-btn" disabled>Serang!</button>
+            <div id="feedback-area"></div>
+            <button id="continue-btn" class="hidden">Lanjutkan</button>
         </div>
 
-        <div id="options-container" class="options-grid"></div>
-
-        <button id="submit-btn" disabled>Submit</button>
-
-        <div id="feedback-area"></div>
-
-        <div id="explanation-area" style="display: none; margin-top: 20px; padding: 15px; border: 1px solid #ccc; border-radius: 5px;">
-            <h3>Langkah Pengerjaan:</h3>
-            <div id="explanation-content"></div>
+        <div id="game-over-overlay" class="overlay hidden">
+            <div class="overlay-content">
+                <h2>Game Over</h2>
+                <button id="retry-btn">Try Again</button>
+                <a href="{{ url_for('index') }}" class="button-link">Back to Main Menu</a>
+            </div>
         </div>
 
-        <button id="next-question-btn" class="hidden">Soal Berikutnya</button>
-
+        <div id="victory-overlay" class="overlay hidden">
+            <div class="overlay-content">
+                <h2>You Win!</h2>
+                <p>Level Cleared!</p>
+                <a href="{{ url_for('level_select', stage_name=stage_name) }}" class="button-link">Back to Level Select</a>
+            </div>
+        </div>
     </div>
-
 </body>
 </html>

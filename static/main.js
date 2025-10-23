@@ -1,189 +1,202 @@
-// Variabel global untuk menyimpan state permainan
-let currentQuestionId = null;
-let selectedAnswer = null;
-let stageName = null;
-let levelNum = null;
+// Lokasi: static/main.js
 
-// Menjalankan logika utama setelah seluruh DOM siap
 document.addEventListener('DOMContentLoaded', () => {
-    const gameContainer = document.querySelector('.game-container');
-    if (gameContainer) {
-        initializeGame(gameContainer);
-    }
-});
+    // --- State & UI Elements ---
+    let playerHP;
+    let bossHP;
+    let isGameOver;
+    let timer;
+    let currentQuestionId;
+    let selectedAnswer;
 
-function initializeGame(container) {
-    const questionArea = document.getElementById('question-area');
-    const optionsContainer = document.getElementById('options-container');
-    const feedbackArea = document.getElementById('feedback-area');
-    const postAnswerBtn = document.getElementById('next-question-btn');
-    const submitBtn = document.getElementById('submit-btn');
-    const explanationArea = document.getElementById('explanation-area');
-    const explanationContent = document.getElementById('explanation-content');
+    const ui = {
+        playerHpBar: document.getElementById('player-hp-bar'),
+        playerHpText: document.getElementById('player-hp-text'),
+        bossHpBar: document.getElementById('boss-hp-bar'),
+        bossHpText: document.getElementById('boss-hp-text'),
+        timerDisplay: document.getElementById('timer-display'),
+        questionArea: document.getElementById('question-area'),
+        optionsContainer: document.getElementById('options-container'),
+        feedbackArea: document.getElementById('feedback-area'),
+        continueBtn: document.getElementById('continue-btn'),
+        submitBtn: document.getElementById('submit-btn'),
+        gameOverOverlay: document.getElementById('game-over-overlay'),
+        victoryOverlay: document.getElementById('victory-overlay'),
+        retryBtn: document.getElementById('retry-btn'),
+        fightContainer: document.querySelector('.fight-container'),
+    };
+    
+    const stageName = ui.fightContainer.dataset.stageName;
+    const levelNum = ui.fightContainer.dataset.levelNum;
 
-    stageName = container.dataset.stageName;
-    levelNum = container.dataset.levelNum;
+    // ==========================================================
+    // --- FUNGSI UTAMA GAME ---
+    // ==========================================================
 
-    // Fungsi aman untuk merender MathJax, menunggu promise-nya selesai.
-    function renderMath(element) {
-        // Cek jika MathJax sudah ada di window
-        if (window.MathJax && window.MathJax.startup) {
-            MathJax.startup.promise
-                .then(() => {
-                    return MathJax.typesetPromise([element]);
-                })
-                .catch((err) => console.error("MathJax typesetting error:", err));
-        }
-    }
+    /**
+     * Memulai level. Ini adalah satu-satunya titik masuk.
+     */
+    const startLevel = () => {
+        // 1. ATUR HP PLAYER DAN BOSS DAHULU
+        playerHP = 100;
+        bossHP = 100;
+        isGameOver = false;
 
-    async function fetchAndDisplayQuestion() {
-        questionArea.innerHTML = '<p>Memuat soal...</p>';
-        optionsContainer.innerHTML = '';
-        feedbackArea.innerHTML = '';
-        explanationArea.style.display = 'none';
-        explanationContent.innerHTML = '';
-        selectedAnswer = null;
+        // 2. ATUR TAMPILAN VISUAL HP
+        ui.playerHpBar.style.width = '100%';
+        ui.bossHpBar.style.width = '100%';
+        ui.playerHpText.textContent = `100 / 100`;
+        ui.bossHpText.textContent = `100 / 100`;
         
-        submitBtn.classList.remove('hidden');
-        submitBtn.disabled = true;
-        postAnswerBtn.classList.add('hidden');
+        // 3. SEMBUNYIKAN LAYAR KEMENANGAN/KEKALAHAN
+        ui.gameOverOverlay.classList.add('hidden');
+        ui.victoryOverlay.classList.add('hidden');
+        
+        // 4. BARU MUAT SOAL SETELAH SEMUANYA SIAP
+        fetchAndDisplayQuestion();
+    };
 
+    /**
+     * Fungsi ini dipanggil HANYA SETELAH ada perubahan HP.
+     * Ini adalah satu-satunya tempat logika menang/kalah berada.
+     */
+    const applyDamageAndCheckStatus = (damageTo, amount) => {
+        if (damageTo === 'player') {
+            playerHP -= amount;
+        } else if (damageTo === 'boss') {
+            bossHP -= amount;
+        }
+
+        // Update tampilan visual HP
+        playerHP = Math.max(0, playerHP);
+        bossHP = Math.max(0, bossHP);
+        ui.playerHpBar.style.width = `${playerHP}%`;
+        ui.bossHpBar.style.width = `${bossHP}%`;
+        ui.playerHpText.textContent = `${playerHP} / 100`;
+        ui.bossHpText.textContent = `${bossHP} / 100`;
+
+        // LOGIKA EKSPLISIT SESUAI PERMINTAAN ANDA
+        if (bossHP <= 0) {
+            isGameOver = true;
+            stopTimer();
+            ui.victoryOverlay.classList.remove('hidden');
+        } else if (playerHP <= 0) {
+            isGameOver = true;
+            stopTimer();
+            ui.gameOverOverlay.classList.remove('hidden');
+        }
+    };
+
+    // --- ALUR GAME ---
+
+    const submitAnswerHandler = async () => {
+        if (isGameOver || !selectedAnswer) return;
+        stopTimer();
+        document.querySelectorAll('.option-btn').forEach(btn => btn.disabled = true);
+        ui.submitBtn.disabled = true;
+
+        const response = await fetch(`/api/answer`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ question_id: currentQuestionId, answer: selectedAnswer, stageName, levelNum })
+        });
+        const result = await response.json();
+        
+        if (result.correct) {
+            ui.feedbackArea.textContent = 'Benar! Serangan berhasil!';
+            ui.feedbackArea.style.color = 'green';
+            applyDamageAndCheckStatus('boss', 10); // Serang boss
+        } else {
+            ui.feedbackArea.textContent = `Salah! ❌ Jawaban yang benar: ${result.canonical_answer}`;
+            ui.feedbackArea.style.color = 'red';
+            applyDamageAndCheckStatus('player', 20); // Serang player
+        }
+
+        if (!isGameOver) {
+            ui.submitBtn.classList.add('hidden');
+            ui.continueBtn.textContent = 'Soal Berikutnya';
+            ui.continueBtn.onclick = fetchAndDisplayQuestion;
+            ui.continueBtn.classList.remove('hidden');
+        }
+    };
+
+    const handleTimeOut = () => {
+        if (isGameOver) return;
+        ui.feedbackArea.textContent = 'Waktu Habis! Kamu terkena serangan!';
+        ui.feedbackArea.style.color = 'orange';
+        
+        applyDamageAndCheckStatus('player', 5); // Serang player
+
+        if (!isGameOver) {
+            ui.continueBtn.textContent = 'Beralih ke Soal Lain';
+            ui.continueBtn.onclick = fetchAndDisplayQuestion;
+            ui.continueBtn.classList.remove('hidden');
+            startTimer();
+        }
+    };
+    
+    // --- FUNGSI-FUNGSI BANTU ---
+    const stopTimer = () => clearInterval(timer);
+    const startTimer = () => {
+        if (isGameOver) return;
+        let timerValue = 60;
+        ui.timerDisplay.textContent = timerValue;
+        stopTimer();
+        timer = setInterval(() => {
+            if (isGameOver) { stopTimer(); return; }
+            timerValue--;
+            ui.timerDisplay.textContent = timerValue;
+            if (timerValue <= 0) handleTimeOut();
+        }, 1000);
+    };
+
+    const fetchAndDisplayQuestion = async () => {
+        ui.continueBtn.classList.add('hidden');
+        ui.questionArea.innerHTML = '<p>Memuat soal...</p>';
+        ui.optionsContainer.innerHTML = '';
+        ui.feedbackArea.innerHTML = '';
+        selectedAnswer = null;
+        ui.submitBtn.disabled = true;
+        ui.submitBtn.classList.remove('hidden');
         try {
             const response = await fetch(`/api/question?level=${levelNum}`);
-            if (!response.ok) throw new Error('Gagal mengambil soal.');
-            
             const question = await response.json();
             currentQuestionId = question.id;
-
-            questionArea.innerHTML = `<p>Soal:</p><div>$$${question.latex}$$</div>`;
-            
+            ui.questionArea.innerHTML = `<p>Soal:</p><div>$$${question.latex}$$</div>`;
             question.options.forEach(option => {
                 const button = document.createElement('button');
                 button.className = 'option-btn';
                 button.textContent = option;
-                button.onclick = () => selectOption(button, option);
-                optionsContainer.appendChild(button);
-            });
-
-            renderMath(questionArea);
-
-        } catch (error) {
-            questionArea.innerHTML = `<p style="color: red;">${error.message}</p>`;
-        }
-    }
-
-    function selectOption(selectedButton, optionValue) {
-        document.querySelectorAll('.option-btn').forEach(btn => btn.classList.remove('selected'));
-        selectedButton.classList.add('selected');
-        selectedAnswer = optionValue;
-        submitBtn.disabled = false;
-    }
-
-    function displayExplanation(explanationData) {
-        explanationContent.innerHTML = '';
-        if (!explanationData || explanationData.length === 0) return;
-
-        explanationData.forEach(item => {
-            if (item.type === 'text' && item.content) {
-                const p = document.createElement('p');
-                p.textContent = item.content;
-                explanationContent.appendChild(p);
-            } else if (item.type === 'latex' && item.content) {
-                const div = document.createElement('div');
-                div.innerHTML = `$$${item.content}$$`;
-                explanationContent.appendChild(div);
-            }
-        });
-
-        explanationArea.style.display = 'block';
-        
-        renderMath(explanationContent);
-    }
-
-    async function submitAnswerHandler() {
-        if (!selectedAnswer || submitBtn.disabled) return;
-
-        document.querySelectorAll('.option-btn').forEach(btn => btn.disabled = true);
-        submitBtn.disabled = true;
-
-        try {
-            const response = await fetch('/api/answer', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    question_id: currentQuestionId,
-                    answer: selectedAnswer,
-                    stage_name: stageName,
-                    level_num: parseInt(levelNum)
-                })
-            });
-
-            if (!response.ok) {
-                const err = await response.json().catch(()=>null);
-                throw new Error(err?.error || 'Gagal mengirim jawaban.');
-            }
-
-            const result = await response.json();
-            
-            submitBtn.classList.add('hidden');
-            postAnswerBtn.classList.remove('hidden');
-
-            if (result.correct) {
-                feedbackArea.textContent = 'Benar! ✅ Level Selesai!';
-                feedbackArea.style.color = 'green';
-                postAnswerBtn.textContent = 'Lanjut ke Peta Level';
-                postAnswerBtn.onclick = () => {
-                    window.location.href = `/levels/${stageName}`;
+                button.onclick = () => {
+                    if (isGameOver) return;
+                    document.querySelectorAll('.option-btn').forEach(btn => btn.classList.remove('selected'));
+                    button.classList.add('selected');
+                    selectedAnswer = option;
+                    ui.submitBtn.disabled = false;
                 };
-            } else {
-                feedbackArea.textContent = `Salah! ❌ Jawaban yang benar: ${result.canonical_answer}`;
-                feedbackArea.style.color = 'red';
-                postAnswerBtn.textContent = 'Coba Lagi';
-                postAnswerBtn.onclick = () => {
-                    window.location.reload();
-                };
-            }
-
-            if (result.explanation) {
-                displayExplanation(result.explanation);
-            }
-
+                ui.optionsContainer.appendChild(button);
+            });
+            MathJax.typesetPromise([ui.questionArea]);
+            startTimer();
         } catch (error) {
-            feedbackArea.innerHTML = `<p style="color: red;">${error.message}</p>`;
-            document.querySelectorAll('.option-btn').forEach(btn => btn.disabled = false);
-            submitBtn.disabled = false;
+            ui.questionArea.innerHTML = `<p style="color: red;">Gagal memuat soal.</p>`;
         }
-    }
+    };
 
-    submitBtn.addEventListener('click', submitAnswerHandler);
-
-    document.addEventListener('keydown', function(event) {
+    // --- EVENT LISTENERS ---
+    ui.submitBtn.addEventListener('click', submitAnswerHandler);
+    ui.retryBtn.addEventListener('click', startLevel);
+    document.addEventListener('keydown', (event) => {
         if (event.key === 'Enter') {
             event.preventDefault();
-            if (!submitBtn.disabled && !submitBtn.classList.contains('hidden')) {
+            if (!ui.submitBtn.disabled && !ui.submitBtn.classList.contains('hidden')) {
                 submitAnswerHandler();
-            } 
-            else if (!postAnswerBtn.classList.contains('hidden')) {
-                postAnswerBtn.click();
+            } else if (!ui.continueBtn.classList.contains('hidden') && !isGameOver) {
+                ui.continueBtn.click();
             }
         }
     });
 
-    fetchAndDisplayQuestion();
-}
-
-// Fungsi ini perlu tetap di scope global untuk onclick di stage_select.html
-async function unlockAllLevels() {
-    if (!confirm('Apakah Anda yakin ingin membuka semua level dan stage? Aksi ini untuk testing.')) {
-        return;
-    }
-    try {
-        const response = await fetch('/api/dev/unlock-all', { method: 'POST' });
-        if (!response.ok) throw new Error('Gagal menghubungi server.');
-        const result = await response.json();
-        alert(result.message);
-        window.location.reload();
-    } catch (error) {
-        alert(`Error: ${error.message}`);
-    }
-}
+    // --- MULAI PERMAINAN ---
+    startLevel();
+});

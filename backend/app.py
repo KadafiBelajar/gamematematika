@@ -102,6 +102,8 @@ def api_get_question():
             "detail": str(e)
         }), 500
 
+# Lokasi: backend/app.py
+
 @app.route("/api/answer", methods=["POST"])
 def api_handle_answer():
     """API untuk memvalidasi jawaban dan meng-unlock level berikutnya."""
@@ -120,10 +122,12 @@ def api_handle_answer():
     correct_answer = question_data['answer']
     is_correct = check_answer(user_answer, correct_answer)
     
-    # Buat penjelasan secara on-the-fly menggunakan params yang disimpan.
-    params = question_data['params']
-    params['level'] = level_num # Pastikan level saat ini ditambahkan ke params
-    explanation = generate_limit_explanation(params)
+    # --- BAGIAN YANG DIUBAH ---
+    # Hapus atau jadikan komentar bagian penjelasan untuk sementara
+    # params = question_data['params']
+    # params['level'] = level_num 
+    # explanation = generate_limit_explanation(params)
+    # -------------------------
 
     session.pop('current_question', None)
 
@@ -132,22 +136,19 @@ def api_handle_answer():
             session['progress'] = {'limit': 1, 'turunan': 1, 'integral': 1}
         
         unlocked_until = session['progress'].get(stage_name, 1)
+        # Kita akan memodifikasi logika ini nanti saat pertarungan selesai
+        # Untuk sekarang, biarkan seperti ini
         if level_num == unlocked_until and level_num < 15:
             session['progress'][stage_name] = unlocked_until + 1
             session.modified = True
             
-    # Unpack the explanation tuple and structure it for the frontend
-    explanation_text, calculation_latex = explanation
-    structured_explanation = [
-        {"type": "text", "content": explanation_text},
-        {"type": "latex", "content": calculation_latex}
-    ]
-
+    # --- BAGIAN YANG DIUBAH ---
+    # Buat response baru tanpa 'explanation'
     response = {
         "correct": is_correct,
-        "canonical_answer": correct_answer,
-        "explanation": structured_explanation
+        "canonical_answer": correct_answer
     }
+    # -------------------------
     return jsonify(response)
 
 # --- Developer Endpoint ---
