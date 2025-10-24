@@ -409,7 +409,7 @@ def _gen_substitusi(level):
     ans = limit(f, x, point)
     
     return {
-        "latex": rf"\lim_{{x \to {point}}} {latex(f)}",
+        "latex": rf"\lim_{{x \to {point}}} \left({latex(f)}\right)",
         "answer": str(ans),
         "params": {"type": gen_type, "f_str": str(f), "point": point}
     }
@@ -453,7 +453,7 @@ def _gen_faktorisasi(level):
     latex_original = f"\\frac{{{latex(num)}}}{{{latex(den)}}}"
     
     return {
-        "latex": rf"\lim_{{x \to {point}}} {latex_original}",
+        "latex": rf"\lim_{{x \to {point}}} \left({latex_original}\right)",
         "answer": str(ans),
         "params": {"type": gen_type, "f_str": f_str_original, "point": point}
     }
@@ -548,7 +548,7 @@ def _gen_rasionalisasi(level):
                         latex_original = f"\\frac{{{latex(num)}}}{{{latex(den_expanded)}}}"
                         
                         return {
-                            "latex": rf"\lim_{{x \to {point}}} {latex_original}",
+                            "latex": rf"\lim_{{x \to {point}}} \left({latex_original}\right)",
                             "answer": str(ans),
                             "params": {"type": gen_type, "f_str": f_str_original, "point": point}
                         }
@@ -587,7 +587,7 @@ def _gen_rasionalisasi_fallback(level):
     ans = limit(f, x, point)
     
     return {
-        "latex": rf"\lim_{{x \to {point}}} \frac{{{latex(num)}}}{{{latex(den)}}}",
+        "latex": rf"\lim_{{x \to {point}}} \left(\frac{{{latex(num)}}}{{{latex(den)}}}\right)",
         "answer": str(ans),
         "params": {"type": "rasionalisasi_akar_sederhana", "f_str": f"({num})/({den})", "point": point}
     }
@@ -627,7 +627,7 @@ def _gen_rasionalisasi_level_8():
         f_str_original = f"({num})/({den})"
         latex_original = f"\\frac{{{latex(num)}}}{{{latex(den)}}}"
         return {
-            "latex": rf"\lim_{{x \to {point}}} {latex_original}",
+            "latex": rf"\lim_{{x \to {point}}} \left({latex_original}\right)",
             "answer": str(ans),
             "params": {"type": "rasionalisasi_akar_kompleks", "f_str": f_str_original, "point": point}
         }
@@ -785,7 +785,7 @@ def _gen_rasionalisasi_level_9():
                         latex_original = f"\\frac{{{latex(num)}}}{{{latex(den)}}}"
                         
                         return {
-                            "latex": rf"\lim_{{x \to {point}}} {latex_original}",
+                            "latex": rf"\lim_{{x \to {point}}} \left({latex_original}\right)",
                             "answer": str(ans),
                             "params": {"type": gen_type, "f_str": f_str_original, "point": point}
                         }
@@ -839,7 +839,7 @@ def _gen_rasionalisasi_level_9_fallback():
     latex_original = f"\\frac{{{latex(num)}}}{{{latex(den)}}}"
     
     return {
-        "latex": rf"\lim_{{x \to {point}}} {latex_original}",
+        "latex": rf"\lim_{{x \to {point}}} \left({latex_original}\right)",
         "answer": str(ans),
         "params": {"type": "rasionalisasi_beda_akar", "f_str": f_str_original, "point": point}
     }
@@ -888,7 +888,7 @@ def _gen_trigonometri(level):
             if not ans.is_finite or not ans.is_Rational or ans == 0:
                 return _gen_trigonometri(level)
             return {
-                "latex": rf"\lim_{{x \to {latex(point)}}} {latex(f)}",
+                "latex": rf"\lim_{{x \to {latex(point)}}} \left({latex(f)}\right)",
                 "answer": f"{ans.p}/{ans.q}" if ans.q != 1 else str(ans.p),
                 "params": {"type": "trigonometri_expert", "f_str": str(f), "point": str(point)}
             }
@@ -916,7 +916,7 @@ def _gen_trigonometri(level):
             ans = limit(f, x, point)
             if not ans.is_finite or not ans.is_Rational: return _gen_trigonometri(level)
             return {
-                "latex": rf"\lim_{{x \to {latex(point)}}} {latex(f)}",
+                "latex": rf"\lim_{{x \to {latex(point)}}} \left({latex(f)}\right)",
                 "answer": f"{ans.p}/{ans.q}" if ans.q != 1 else str(ans.p),
                 "params": {"type": "trigonometri_lanjutan", "f_str": str(f), "point": str(point)}
             }
@@ -964,7 +964,7 @@ def _gen_trigonometri(level):
                 return _gen_trigonometri(level)
                 
             return {
-                "latex": rf"\lim_{{x \to {latex(point)}}} {latex(f)}",
+                "latex": rf"\lim_{{x \to {latex(point)}}} \left({latex(f)}\right)",
                 "answer": f"{ans.p}/{ans.q}" if ans.q != 1 else str(ans.p),
                 "params": params
             }
@@ -986,7 +986,7 @@ def _gen_tak_hingga(level):
     ans = limit(f, x, oo)
     
     return {
-        "latex": rf"\lim_{{x \to \infty}} {latex(f)}",
+        "latex": rf"\lim_{{x \to \infty}} \left({latex(f)}\right)",
         "answer": str(ans),
         "params": {"type": "tak_hingga", "f_str": str(f), "point": 'oo'}
     }
