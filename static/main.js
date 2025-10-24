@@ -862,4 +862,37 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('keydown', startBackgroundMusic, { once: true });
     
     startLevel();
+
+    // ==========================================================
+    // CAMERA FOLLOW (optional, gated by data-enable-camera)
+    // ==========================================================
+    try {
+        const viewportEl = document.querySelector('[data-camera-viewport]');
+        if (
+            viewportEl &&
+            viewportEl.dataset &&
+            viewportEl.dataset.enableCamera === 'true' &&
+            typeof window !== 'undefined' &&
+            typeof window.Camera2D !== 'undefined'
+        ) {
+            const worldEl = document.querySelector('[data-world]');
+            const playerEl = document.querySelector('[data-player]');
+            if (worldEl && playerEl) {
+                const camera = new window.Camera2D({
+                    viewport: viewportEl,
+                    world: worldEl,
+                    target: playerEl,
+                    damping: 0.2,
+                    zoom: 1,
+                    minZoom: 0.5,
+                    maxZoom: 3,
+                    pixelSnap: true,
+                });
+                camera.start();
+                window.__camera2D = camera;
+            }
+        }
+    } catch (err) {
+        console.warn('Camera init skipped:', err);
+    }
 });
