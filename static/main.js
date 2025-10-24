@@ -665,11 +665,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const handleNextLevel = async () => {
         try {
             const nextLevel = parseInt(levelNum) + 1;
-            window.location.href = `/stage/${stageName}/${nextLevel}`;
+            window.location.href = `/main/${stageName}/${nextLevel}`;
         } catch (error) {
             console.error('Error navigating to next level:', error);
             // Fallback ke level select
-            window.location.href = `/stage/${stageName}`;
+            window.location.href = `/levels/${stageName}`;
         }
     };
     
@@ -784,6 +784,29 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     });
+    
+    // Click outside pause menu to resume
+    if (ui.pauseOverlay) {
+        ui.pauseOverlay.addEventListener('click', (event) => {
+            // Check if click is directly on the overlay (not on its children)
+            if (event.target === ui.pauseOverlay) {
+                hidePauseOverlay();
+                if (!isGameOver && !isPaused) {
+                    startTimer();
+                }
+            }
+        });
+    }
+    
+    // Click outside settings menu to go back to pause menu
+    if (ui.settingsOverlay) {
+        ui.settingsOverlay.addEventListener('click', (event) => {
+            // Check if click is directly on the overlay (not on its children)
+            if (event.target === ui.settingsOverlay) {
+                hideSettingsOverlay();
+            }
+        });
+    }
 
     // ==========================================================
     // INITIALIZE VOLUME
