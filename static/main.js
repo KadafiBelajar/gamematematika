@@ -204,9 +204,12 @@ document.addEventListener('DOMContentLoaded', () => {
     let playerHP;
     let bossHP;
     let isGameOver;
+    let isPaused = false;
     let timer;
     let currentQuestionId;
     let selectedAnswer;
+    let musicVolume = 50;
+    let sfxVolume = 50;
 
     const ui = {
         playerHpBar: document.getElementById('player-hp-bar'),
@@ -221,8 +224,20 @@ document.addEventListener('DOMContentLoaded', () => {
         submitBtn: document.getElementById('submit-btn'),
         gameOverOverlay: document.getElementById('game-over-overlay'),
         victoryOverlay: document.getElementById('victory-overlay'),
+        pauseOverlay: document.getElementById('pause-overlay'),
+        settingsOverlay: document.getElementById('settings-overlay'),
         retryBtn: document.getElementById('retry-btn'),
         fightContainer: document.querySelector('.fight-container'),
+        pauseBtn: document.getElementById('pause-btn'),
+        resumeBtn: document.getElementById('resume-btn'),
+        restartBtn: document.getElementById('restart-btn'),
+        settingsBtn: document.getElementById('settings-btn'),
+        settingsBackBtn: document.getElementById('settings-back-btn'),
+        musicVolumeSlider: document.getElementById('music-volume'),
+        sfxVolumeSlider: document.getElementById('sfx-volume'),
+        musicVolumeValue: document.getElementById('music-volume-value'),
+        sfxVolumeValue: document.getElementById('sfx-volume-value'),
+        nextLevelBtn: document.getElementById('next-level-btn'),
     };
     
     const fightContainer = document.querySelector('.fight-container');
@@ -243,6 +258,14 @@ document.addEventListener('DOMContentLoaded', () => {
         ui.victoryOverlay.classList.add('hidden');
         ui.victoryOverlay.style.display = 'none';
         ui.victoryOverlay.style.visibility = 'hidden';
+        
+        ui.pauseOverlay.classList.add('hidden');
+        ui.pauseOverlay.style.display = 'none';
+        ui.pauseOverlay.style.visibility = 'hidden';
+        
+        ui.settingsOverlay.classList.add('hidden');
+        ui.settingsOverlay.style.display = 'none';
+        ui.settingsOverlay.style.visibility = 'hidden';
     }
     
     function showGameOverOverlay() {
@@ -257,6 +280,41 @@ document.addEventListener('DOMContentLoaded', () => {
         ui.victoryOverlay.classList.remove('hidden');
         ui.victoryOverlay.style.display = 'flex';
         ui.victoryOverlay.style.visibility = 'visible';
+    }
+    
+    function showPauseOverlay() {
+        isPaused = true;
+        stopTimer();
+        ui.pauseOverlay.classList.remove('hidden');
+        ui.pauseOverlay.style.display = 'flex';
+        ui.pauseOverlay.style.visibility = 'visible';
+        if (soundManager) {
+            soundManager.pauseBackgroundMusic();
+        }
+    }
+    
+    function hidePauseOverlay() {
+        isPaused = false;
+        ui.pauseOverlay.classList.add('hidden');
+        ui.pauseOverlay.style.display = 'none';
+        ui.pauseOverlay.style.visibility = 'hidden';
+        if (soundManager) {
+            soundManager.resumeBackgroundMusic();
+        }
+    }
+    
+    function showSettingsOverlay() {
+        ui.pauseOverlay.classList.add('hidden');
+        ui.settingsOverlay.classList.remove('hidden');
+        ui.settingsOverlay.style.display = 'flex';
+        ui.settingsOverlay.style.visibility = 'visible';
+    }
+    
+    function hideSettingsOverlay() {
+        ui.settingsOverlay.classList.add('hidden');
+        ui.settingsOverlay.style.display = 'none';
+        ui.settingsOverlay.style.visibility = 'hidden';
+        showPauseOverlay();
     }
 
     // ==========================================================
@@ -342,6 +400,9 @@ document.addEventListener('DOMContentLoaded', () => {
             isGameOver = true;
             stopTimer();
             
+            // Unlock next level
+            unlockNextLevel();
+            
             // Play victory sound
             if (soundManager) {
                 soundManager.play('victory');
@@ -349,9 +410,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             setTimeout(() => {
-                ui.victoryOverlay.classList.remove('hidden');
+                showVictoryOverlay();
             }, 500);
-        } else if (playerHP <= 0) {
+        } else if (playerHP <= 0 && !isGameOver) {
+            console.log('>>> PLAYER DEFEATED - GAME OVER <<<');
             isGameOver = true;
             stopTimer();
             
@@ -362,7 +424,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             setTimeout(() => {
-                ui.gameOverOverlay.classList.remove('hidden');
+                showGameOverOverlay();
             }, 500);
         }
     };
@@ -422,7 +484,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const handleTimeOut = () => {
-        if (isGameOver) return;
+        if (isGameOver || isPaused) return;
         ui.feedbackArea.textContent = '⏱ Waktu Habis! Kamu terkena serangan!';
         ui.feedbackArea.style.color = '#f59e0b';
         
@@ -449,7 +511,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     
     const startTimer = () => {
-        if (isGameOver) return;
+        if (isGameOver || isPaused) return;
         let timerValue = 90;
         let warningPlayed = false;
         ui.timerDisplay.textContent = timerValue;
@@ -457,7 +519,7 @@ document.addEventListener('DOMContentLoaded', () => {
         stopTimer();
         
         timer = setInterval(() => {
-            if (isGameOver) {
+            if (isGameOver || isPaused) {
                 stopTimer();
                 return;
             }
@@ -572,8 +634,57 @@ document.addEventListener('DOMContentLoaded', () => {
         healBtn.querySelector('span').textContent = `HEAL (${healCount})`;
     }
 
-    // --- EVENT LISTENERS ---
+    // ==========================================================
+    // VOLUME CONTROL
+    // ==========================================================
+    const updateMusicVolume = (value) => {
+        musicVolume = value;
+        ui.musicVolumeValue.textContent = `${value}%`;
+        if (soundManager && soundManager.backgroundMusic) {
+            soundManager.backgroundMusic.volume = value / 100;
+        }
+    };
+    
+    const updateSfxVolume = (value) => {
+        sfxVolume = value;
+        ui.sfxVolumeValue.textContent = `${value}%`;
+        if (soundManager) {
+            // Update all sound effects volume
+            Object.keys(soundManager.sounds).forEach(key => {
+                if (soundManager.sounds[key]) {
+                    const baseVolume = soundManager.config.sounds[key].volume || 0.5;
+                    soundManager.sounds[key].volume = baseVolume * (value / 100);
+                }
+            });
+        }
+    };
+    
+    // ==========================================================
+    // NEXT LEVEL HANDLER
+    // ==========================================================
+    const handleNextLevel = async () => {
+        try {
+            const nextLevel = parseInt(levelNum) + 1;
+            window.location.href = `/stage/${stageName}/${nextLevel}`;
+        } catch (error) {
+            console.error('Error navigating to next level:', error);
+            // Fallback ke level select
+            window.location.href = `/stage/${stageName}`;
+        }
+    };
+    
+    // ==========================================================
+    // EVENT LISTENERS
+    // ==========================================================
+    
+    // Submit & Continue
     ui.submitBtn.addEventListener('click', submitAnswerHandler);
+    
+    if (ui.continueBtn) {
+        ui.continueBtn.addEventListener('click', fetchAndDisplayQuestion);
+    }
+    
+    // Retry Button
     ui.retryBtn.addEventListener('click', () => {
         healCount = 3;
         if (healBtn) {
@@ -584,28 +695,140 @@ document.addEventListener('DOMContentLoaded', () => {
         startLevel();
     });
     
-    if (ui.continueBtn) {
-        ui.continueBtn.addEventListener('click', fetchAndDisplayQuestion);
+    // Pause Menu Buttons
+    if (ui.pauseBtn) {
+        ui.pauseBtn.addEventListener('click', () => {
+            if (!isGameOver) {
+                showPauseOverlay();
+            }
+        });
     }
     
+    if (ui.resumeBtn) {
+        ui.resumeBtn.addEventListener('click', () => {
+            hidePauseOverlay();
+            if (!isGameOver && !isPaused) {
+                startTimer();
+            }
+        });
+    }
+    
+    if (ui.restartBtn) {
+        ui.restartBtn.addEventListener('click', () => {
+            hidePauseOverlay();
+            healCount = 3;
+            if (healBtn) {
+                healBtn.disabled = false;
+                healBtn.style.opacity = '1';
+                healBtn.querySelector('span').textContent = `HEAL (${healCount})`;
+            }
+            startLevel();
+        });
+    }
+    
+    if (ui.settingsBtn) {
+        ui.settingsBtn.addEventListener('click', () => {
+            showSettingsOverlay();
+        });
+    }
+    
+    if (ui.settingsBackBtn) {
+        ui.settingsBackBtn.addEventListener('click', () => {
+            hideSettingsOverlay();
+        });
+    }
+    
+    // Next Level Button
+    if (ui.nextLevelBtn) {
+        ui.nextLevelBtn.addEventListener('click', handleNextLevel);
+    }
+    
+    // Volume Sliders
+    if (ui.musicVolumeSlider) {
+        ui.musicVolumeSlider.addEventListener('input', (e) => {
+            updateMusicVolume(parseInt(e.target.value));
+        });
+    }
+    
+    if (ui.sfxVolumeSlider) {
+        ui.sfxVolumeSlider.addEventListener('input', (e) => {
+            updateSfxVolume(parseInt(e.target.value));
+        });
+    }
+    
+    // Keyboard Events
     document.addEventListener('keydown', (event) => {
         if (event.key === 'Enter') {
             event.preventDefault();
-            if (!ui.submitBtn.disabled && !ui.submitBtn.classList.contains('hidden')) {
+            if (!isPaused && !ui.submitBtn.disabled && !ui.submitBtn.classList.contains('hidden')) {
                 submitAnswerHandler();
-            } else if (!ui.continueBtn.classList.contains('hidden') && !isGameOver) {
+            } else if (!isPaused && !ui.continueBtn.classList.contains('hidden') && !isGameOver) {
                 fetchAndDisplayQuestion();
+            }
+        }
+        
+        // ESC to pause/unpause
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            if (!isGameOver) {
+                if (isPaused) {
+                    if (!ui.settingsOverlay.classList.contains('hidden')) {
+                        hideSettingsOverlay();
+                    } else {
+                        hidePauseOverlay();
+                        startTimer();
+                    }
+                } else {
+                    showPauseOverlay();
+                }
             }
         }
     });
 
+    // ==========================================================
+    // INITIALIZE VOLUME
+    // ==========================================================
+    const initializeVolume = () => {
+        // Set initial volume values
+        if (ui.musicVolumeSlider) {
+            ui.musicVolumeSlider.value = musicVolume;
+            ui.musicVolumeValue.textContent = `${musicVolume}%`;
+        }
+        
+        if (ui.sfxVolumeSlider) {
+            ui.sfxVolumeSlider.value = sfxVolume;
+            ui.sfxVolumeValue.textContent = `${sfxVolume}%`;
+        }
+        
+        // Apply initial volume to sound manager
+        if (soundManager) {
+            if (soundManager.backgroundMusic) {
+                soundManager.backgroundMusic.volume = musicVolume / 100;
+            }
+            
+            Object.keys(soundManager.sounds).forEach(key => {
+                if (soundManager.sounds[key]) {
+                    const baseVolume = soundManager.config.sounds[key].volume || 0.5;
+                    soundManager.sounds[key].volume = baseVolume * (sfxVolume / 100);
+                }
+            });
+        }
+    };
+    
     // --- MULAI PERMAINAN ---
     console.log('Initializing game...');
+    
+    // Initialize volume controls
+    initializeVolume();
     
     // Start background music on first user interaction
     const startBackgroundMusic = () => {
         if (soundManager) {
             soundManager.playBackgroundMusic();
+            // Apply music volume after starting
+            if (soundManager.backgroundMusic) {
+                soundManager.backgroundMusic.volume = musicVolume / 100;
+            }
         }
         // Remove listeners after first interaction
         document.removeEventListener('click', startBackgroundMusic);

@@ -562,20 +562,6 @@ body.battle-screen {
     flex: 1;
 }
 
-.pause-menu {
-    font-size: 1.8rem;
-    font-weight: 900;
-    color: var(--color-text-secondary);
-    cursor: pointer;
-    transition: all 0.3s;
-    letter-spacing: 2px;
-}
-
-.pause-menu:hover {
-    color: var(--color-accent);
-    text-shadow: 0 0 15px rgba(168, 85, 247, 0.8);
-    transform: scale(1.1);
-}
 
 .question-content {
     font-size: 1.6rem;
@@ -858,6 +844,51 @@ body.battle-screen {
 }
 
 /* ==========================================
+   PAUSE BUTTON
+   ========================================== */
+.pause-btn {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 22px;
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    font-weight: 900;
+    color: white;
+    background: linear-gradient(135deg, #f59e0b, #ea580c);
+    border: 2px solid #fbbf24;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 
+        0 0 30px rgba(245, 158, 11, 0.7),
+        inset 0 0 20px rgba(255, 255, 255, 0.25);
+    z-index: 100;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+}
+
+.pause-btn svg {
+    width: 20px;
+    height: 20px;
+    filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.8));
+}
+
+.pause-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 
+        0 0 45px rgba(245, 158, 11, 0.9),
+        inset 0 0 25px rgba(255, 255, 255, 0.35);
+}
+
+.pause-btn:active {
+    transform: scale(0.98);
+}
+
+/* ==========================================
    FEEDBACK AREA
    ========================================== */
 .feedback-area {
@@ -984,6 +1015,178 @@ body.battle-screen {
 }
 
 .menu-btn, .continue-menu-btn {
+    background: linear-gradient(135deg, #64748b, #475569);
+}
+
+.next-level-btn {
+    background: linear-gradient(135deg, #10b981, #059669);
+    border-color: #34d399;
+}
+
+.next-level-btn:hover {
+    box-shadow: 0 0 40px rgba(16, 185, 129, 0.8);
+}
+
+/* ==========================================
+   PAUSE MENU STYLES
+   ========================================== */
+.pause-menu-content {
+    min-width: 400px;
+}
+
+.pause-title {
+    color: #fbbf24;
+    text-shadow: 0 0 30px rgba(251, 191, 36, 0.8);
+}
+
+.pause-menu-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.resume-btn {
+    background: linear-gradient(135deg, #10b981, #059669);
+    border-color: #34d399;
+}
+
+.resume-btn:hover {
+    box-shadow: 0 0 40px rgba(16, 185, 129, 0.8);
+}
+
+.restart-btn {
+    background: linear-gradient(135deg, #f59e0b, #ea580c);
+    border-color: #fbbf24;
+}
+
+.restart-btn:hover {
+    box-shadow: 0 0 40px rgba(245, 158, 11, 0.8);
+}
+
+.settings-btn {
+    background: linear-gradient(135deg, #8b5cf6, #a855f7);
+    border-color: var(--color-accent);
+}
+
+.settings-btn:hover {
+    box-shadow: 0 0 40px rgba(168, 85, 247, 0.8);
+}
+
+/* ==========================================
+   SETTINGS MENU STYLES
+   ========================================== */
+.settings-content {
+    min-width: 500px;
+    max-width: 600px;
+}
+
+.settings-title {
+    color: var(--color-accent);
+    text-shadow: 0 0 30px rgba(168, 85, 247, 0.8);
+    margin-bottom: 30px;
+}
+
+.settings-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    margin-bottom: 30px;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 10px;
+    border: 2px solid rgba(168, 85, 247, 0.3);
+}
+
+.setting-item {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.setting-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--color-text-primary);
+    letter-spacing: 1px;
+}
+
+.setting-icon {
+    width: 24px;
+    height: 24px;
+    color: var(--color-accent);
+    filter: drop-shadow(0 0 5px rgba(168, 85, 247, 0.5));
+}
+
+.volume-control {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.volume-slider {
+    flex: 1;
+    height: 8px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: linear-gradient(90deg, rgba(168, 85, 247, 0.3), rgba(168, 85, 247, 0.1));
+    border-radius: 5px;
+    outline: none;
+    border: 1px solid rgba(168, 85, 247, 0.5);
+}
+
+.volume-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    background: linear-gradient(135deg, #a855f7, #8b5cf6);
+    border: 2px solid var(--color-accent);
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 15px rgba(168, 85, 247, 0.6);
+    transition: all 0.3s;
+}
+
+.volume-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 0 25px rgba(168, 85, 247, 0.8);
+}
+
+.volume-slider::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    background: linear-gradient(135deg, #a855f7, #8b5cf6);
+    border: 2px solid var(--color-accent);
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 15px rgba(168, 85, 247, 0.6);
+    transition: all 0.3s;
+}
+
+.volume-slider::-moz-range-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 0 25px rgba(168, 85, 247, 0.8);
+}
+
+.volume-value {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--color-accent);
+    min-width: 50px;
+    text-align: right;
+}
+
+.settings-buttons {
+    display: flex;
+    justify-content: center;
+}
+
+.settings-back-btn {
     background: linear-gradient(135deg, #64748b, #475569);
 }
 
@@ -1288,6 +1491,18 @@ body.battle-screen {
         width: 18px;
         height: 18px;
     }
+    
+    .pause-btn {
+        bottom: 18px;
+        left: 18px;
+        padding: 11px 20px;
+        font-size: 0.9rem;
+    }
+    
+    .pause-btn svg {
+        width: 18px;
+        height: 18px;
+    }
 }
 
 /* Mobile Landscape & Small Tablets (481px - 767px) */
@@ -1455,6 +1670,25 @@ body.battle-screen {
     .heal-btn svg {
         width: 18px;
         height: 18px;
+    }
+    
+    .pause-btn {
+        bottom: 14px;
+        left: 14px;
+        padding: 10px 18px;
+        font-size: 0.85rem;
+        gap: 6px;
+    }
+    
+    .pause-btn svg {
+        width: 18px;
+        height: 18px;
+    }
+    
+    .settings-content,
+    .pause-menu-content {
+        min-width: 85%;
+        max-width: 90%;
     }
 }
 
@@ -1684,6 +1918,29 @@ body.battle-screen {
         width: 16px;
         height: 16px;
     }
+    
+    .pause-btn {
+        bottom: 12px;
+        left: 12px;
+        padding: 9px 14px;
+        font-size: 0.75rem;
+        gap: 5px;
+        border-width: 2px;
+    }
+    
+    .pause-btn svg {
+        width: 16px;
+        height: 16px;
+    }
+    
+    .settings-content {
+        min-width: 90%;
+        max-width: 95%;
+    }
+    
+    .pause-menu-content {
+        min-width: 90%;
+    }
 }
 
 /* Extra Small Devices (max 360px) - Layout Super Kompak */
@@ -1822,6 +2079,44 @@ body.battle-screen {
     .heal-btn svg {
         width: 14px;
         height: 14px;
+    }
+    
+    .pause-btn {
+        bottom: 10px;
+        left: 10px;
+        padding: 8px 12px;
+        font-size: 0.7rem;
+        gap: 5px;
+        border-width: 2px;
+    }
+    
+    .pause-btn svg {
+        width: 14px;
+        height: 14px;
+    }
+    
+    .settings-content {
+        min-width: 90%;
+        max-width: 95%;
+        padding: 30px 20px;
+    }
+    
+    .settings-panel {
+        padding: 15px;
+    }
+    
+    .setting-label {
+        font-size: 0.9rem;
+    }
+    
+    .setting-icon {
+        width: 20px;
+        height: 20px;
+    }
+    
+    .pause-menu-content {
+        min-width: 90%;
+        padding: 30px 20px;
     }
 }
 

@@ -112,7 +112,6 @@
                     <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"/>
                 </svg>
                 <span class="question-title">SOLVE THE EQUATION</span>
-                <div class="pause-menu" id="pause-menu">|||</div>
             </div>
             <div id="question-area" class="question-content">
                 <p>Memuat soal...</p>
@@ -141,29 +140,102 @@
             <span>HEAL</span>
         </button>
 
+        <!-- Tombol Pause di Kiri Bawah -->
+        <button id="pause-btn" class="pause-btn" title="Pause Game">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+                <rect x="6" y="4" width="4" height="16"/>
+                <rect x="14" y="4" width="4" height="16"/>
+            </svg>
+            <span>PAUSE</span>
+        </button>
+
+        <!-- Game Over Overlay -->
         <div id="game-over-overlay" class="overlay hidden">
             <div class="overlay-content defeat">
-                <h2 class="overlay-title defeat-title">DEFEAT</h2>
-                <p class="overlay-message">You have been overwhelmed...</p>
+                <h2 class="overlay-title defeat-title">GAME OVER</h2>
+                <p class="overlay-message">You have been defeated...</p>
                 <div class="overlay-buttons">
                     <button id="retry-btn" class="overlay-btn retry-btn">
                         <span>↻</span> TRY AGAIN
                     </button>
                     <a href="{{ url_for('level_select', stage_name=stage_name) }}" class="overlay-btn menu-btn">
-                        <span>☰</span> LEVEL SELECT
+                        <span>☰</span> BACK TO MAIN MENU
                     </a>
                 </div>
             </div>
         </div>
 
+        <!-- Victory Overlay -->
         <div id="victory-overlay" class="overlay hidden">
             <div class="overlay-content victory">
-                <h2 class="overlay-title victory-title">VICTORY!</h2>
+                <h2 class="overlay-title victory-title">YOU WIN!</h2>
                 <p class="overlay-message">You have conquered the demon!</p>
                 <div class="overlay-buttons">
-                    <a href="{{ url_for('level_select', stage_name=stage_name) }}" class="overlay-btn continue-menu-btn">
-                        <span>→</span> CONTINUE
+                    <a href="{{ url_for('level_select', stage_name=stage_name) }}" class="overlay-btn menu-btn">
+                        <span>☰</span> BACK TO MAIN MENU
                     </a>
+                    <button id="next-level-btn" class="overlay-btn next-level-btn">
+                        <span>→</span> GO TO THE NEXT LEVEL
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pause Menu Overlay -->
+        <div id="pause-overlay" class="overlay hidden">
+            <div class="overlay-content pause-menu-content">
+                <h2 class="overlay-title pause-title">PAUSED</h2>
+                <div class="pause-menu-buttons">
+                    <button id="resume-btn" class="overlay-btn resume-btn">
+                        <span>▶</span> RESUME
+                    </button>
+                    <button id="restart-btn" class="overlay-btn restart-btn">
+                        <span>↻</span> RESTART
+                    </button>
+                    <button id="settings-btn" class="overlay-btn settings-btn">
+                        <span>⚙</span> SETTINGS
+                    </button>
+                    <a href="{{ url_for('level_select', stage_name=stage_name) }}" class="overlay-btn menu-btn">
+                        <span>☰</span> BACK TO MAIN MENU
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Menu Overlay -->
+        <div id="settings-overlay" class="overlay hidden">
+            <div class="overlay-content settings-content">
+                <h2 class="overlay-title settings-title">SETTINGS</h2>
+                <div class="settings-panel">
+                    <div class="setting-item">
+                        <label class="setting-label">
+                            <svg class="setting-icon" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>
+                            </svg>
+                            <span>Background Music</span>
+                        </label>
+                        <div class="volume-control">
+                            <input type="range" id="music-volume" class="volume-slider" min="0" max="100" value="50">
+                            <span id="music-volume-value" class="volume-value">50%</span>
+                        </div>
+                    </div>
+                    <div class="setting-item">
+                        <label class="setting-label">
+                            <svg class="setting-icon" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 3v9.28c-.47-.17-.97-.28-1.5-.28C8.01 12 6 14.01 6 16.5S8.01 21 10.5 21c2.31 0 4.2-1.75 4.45-4H15V6h4V3h-7z"/>
+                            </svg>
+                            <span>Sound Effects</span>
+                        </label>
+                        <div class="volume-control">
+                            <input type="range" id="sfx-volume" class="volume-slider" min="0" max="100" value="50">
+                            <span id="sfx-volume-value" class="volume-value">50%</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="settings-buttons">
+                    <button id="settings-back-btn" class="overlay-btn settings-back-btn">
+                        <span>←</span> BACK
+                    </button>
                 </div>
             </div>
         </div>
