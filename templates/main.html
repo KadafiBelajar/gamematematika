@@ -11,6 +11,7 @@
     <script src="{{ url_for('static', filename='assets-config.js') }}"></script>
     <script src="{{ url_for('static', filename='character-animator.js') }}"></script>
     <script src="{{ url_for('static', filename='sound-manager.js') }}"></script>
+    <script src="{{ url_for('static', filename='camera-follow.js') }}"></script>
     <script>
       MathJax = {
         tex: { inlineMath: [['$', '$']], displayMath: [['$$', '$$']] },
@@ -26,7 +27,7 @@
         <div class="particles-layer" id="particles-container"></div>
     </div>
 
-    <div class="fight-container" data-stage-name="{{ stage_name }}" data-level-num="{{ level_num }}">
+    <div class="fight-container" data-stage-name="{{ stage_name }}" data-level-num="{{ level_num }}" data-camera-viewport>
         
         <div class="timer-container">
             <div class="timer-frame">
@@ -40,8 +41,8 @@
         </div>
 
         <div class="battle-hud">
-            <div class="combatant-section player-section">
-                <div class="avatar-container player-avatar" id="player-avatar">
+            <div class="combatant-section player-section" data-world>
+                <div class="avatar-container player-avatar" id="player-avatar" data-player>
                     <div class="avatar-glow"></div>
                     <div class="avatar-frame">
                         <svg viewBox="0 0 100 100" class="avatar-icon">
