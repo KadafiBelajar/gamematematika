@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Trade Bot AI icon - Energetic & Growth palette">
+  <defs>
+    <linearGradient id="gradPrimaryGrowth" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0F7D5C"/>
+      <stop offset="100%" stop-color="#8BEA5E"/>
+    </linearGradient>
+    <style>
+      :root {
+        --primary: #0F7D5C; /* deep green */
+        --secondary: #8BEA5E; /* lime growth */
+        --accent: #F0C13E; /* gold prosperity */
+        --dark: #121417; /* deep gray */
+      }
+      .stroke-primary { stroke: var(--primary); }
+      .stroke-accent { stroke: var(--accent); }
+      .stroke-secondary { stroke: var(--secondary); }
+      .fill-primary { fill: var(--primary); }
+      .fill-accent { fill: var(--accent); }
+      .fill-secondary { fill: var(--secondary); }
+      .fill-dark { fill: var(--dark); }
+    </style>
+  </defs>
+
+  <circle cx="128" cy="128" r="104" fill="url(#gradPrimaryGrowth)" fill-opacity="0.10" stroke="var(--primary)" stroke-width="8"/>
+
+  <g fill="none" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+    <path class="stroke-accent" d="M76 102c16-12 36-18 52-6 15 10 22 26 22 44"/>
+    <circle class="fill-accent" cx="90" cy="98" r="5"/>
+    <circle class="fill-accent" cx="112" cy="92" r="5"/>
+    <circle class="fill-accent" cx="132" cy="106" r="5"/>
+    <circle class="fill-accent" cx="150" cy="140" r="5"/>
+
+    <path class="stroke-accent" d="M76 146c18-12 34 8 52-4 12-8 26-6 38 10"/>
+    <circle class="fill-accent" cx="96" cy="134" r="5"/>
+    <circle class="fill-accent" cx="118" cy="146" r="5"/>
+    <circle class="fill-accent" cx="140" cy="134" r="5"/>
+    <circle class="fill-accent" cx="160" cy="150" r="5"/>
+  </g>
+
+  <g stroke-linecap="round">
+    <line class="stroke-secondary" stroke-width="4" x1="160" y1="106" x2="160" y2="152"/>
+    <rect class="fill-secondary" x="154" y="116" width="12" height="28" rx="2"/>
+
+    <line class="stroke-secondary" stroke-width="4" x1="178" y1="96" x2="178" y2="152"/>
+    <rect class="fill-secondary" x="172" y="104" width="12" height="36" rx="2"/>
+
+    <line class="stroke-secondary" stroke-width="4" x1="196" y1="88" x2="196" y2="150"/>
+    <rect class="fill-secondary" x="190" y="92" width="12" height="44" rx="2"/>
+  </g>
+
+  <g transform="translate(78,186)">
+    <circle class="fill-dark" cx="0" cy="0" r="16"/>
+    <circle fill="#ffffff" cx="0" cy="0" r="6"/>
+    <g class="fill-primary">
+      <rect x="-2.5" y="-28" width="5" height="10" rx="1"/>
+      <rect x="-2.5" y="18" width="5" height="10" rx="1"/>
+      <rect x="-28" y="-2.5" width="10" height="5" rx="1"/>
+      <rect x="18" y="-2.5" width="10" height="5" rx="1"/>
+      <rect x="-20" y="-20" width="5" height="10" rx="1" transform="rotate(-45)"/>
+      <rect x="15" y="-20" width="5" height="10" rx="1" transform="rotate(45)"/>
+      <rect x="-20" y="15" width="5" height="10" rx="1" transform="rotate(45)"/>
+      <rect x="15" y="15" width="5" height="10" rx="1" transform="rotate(-45)"/>
+    </g>
+  </g>
+</svg>
