@@ -189,9 +189,9 @@ def _level13():
     f = a*x**3 + b*x**2 + c*x
     fpp = diff(f, x, 2)
     return {
-        "latex": rf"\text{{Cari }} f''(x) \\text{{ dari }} f(x) = {latex(f)}",
+        "latex": rf"\text{{Tentukan turunan kedua }} f''(x) \text{{ untuk }} f(x) = {latex(f)}",
         "answer": _fmt_answer(fpp),
-        "params": {"type": "second_derivative_poly"}
+        "params": {"type": "second_derivative_poly", "a": a, "b": b, "c": c, "f_str": str(f)}
     }
 
 
@@ -204,29 +204,32 @@ def _level14():
     fp = diff(f, x)
     ans = fp.subs(x, c0)
     return {
-        "latex": rf"\text{{Gradien garis singgung }} f(x)={latex(f)} \\text{{ di }} x={c0} \\text{{ adalah }}?",
+        "latex": rf"\text{{Diketahui }} f(x) = {latex(f)}.\, \text{{Tentukan gradien garis singgung kurva di }} x = {c0}.",
         "answer": _fmt_answer(ans),
         "params": {"type": "tangent_gradient", "point": c0}
     }
 
 
 def _level15():
-    # Stationary points of f(x)=ax^3+bx^2+c
+    # Stationary point (x, f(x)) of f(x)=ax^3+bx^2+c
     a = random.randint(1, 5) * random.choice([1, -1])
     b = random.randint(1, 5) * random.choice([1, -1])
     c = random.randint(-6, 6)
     f = a*x**3 + b*x**2 + c
     fp = diff(f, x)
-    critical_points = sorted(set([sol for sol in fp.as_poly(x).all_roots()]))
-    # Return x-coordinate(s) of stationary points; if multiple, join with commas
-    if not critical_points:
-        ans = "Tidak ada"
+    roots = sorted(set([sol for sol in fp.as_poly(x).all_roots()]))
+    # Pilih satu titik stasioner untuk dijadikan jawaban
+    if not roots:
+        # fallback yang aman
+        target_x = 0
     else:
-        ans = ", ".join(str(simplify(pt)) for pt in critical_points)
+        target_x = random.choice(roots)
+    target_y = f.subs(x, target_x)
+    ans = f"({simplify(target_x)}, {simplify(target_y)})"
     return {
-        "latex": rf"\text{{Titik stasioner dari }} f(x)={latex(f)} \\text{{ (nilai x) adalah?}}",
+        "latex": rf"\text{{Tentukan koordinat titik stasioner }} (x, f(x)) \text{{ dari }} f(x) = {latex(f)}.",
         "answer": ans,
-        "params": {"type": "stationary_points"}
+        "params": {"type": "stationary_points", "a": a, "b": b, "c": c, "f_str": str(f)}
     }
 
 

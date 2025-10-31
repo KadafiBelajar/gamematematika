@@ -191,17 +191,46 @@ def _generate_derivative_distractors(correct_answer_str, params):
         distractors.append(fmt_expr((cos(a*x) * v_val - u_val * v_prime) / v_val**2))
     
     # ============================================================
-    # LEVEL 13: Second Derivative
+    # LEVEL 13: Second Derivative (ekspresi kompleks yang sangat mirip)
     # ============================================================
     elif problem_type == 'second_derivative_poly' and a is not None and b is not None:
         c_val = params.get('c', 0)
         f = a*x**3 + b*x**2 + c_val*x
+        
+        # Jawaban benar: 6*a*x + 2*b
         fp = diff(f, x)
-        # Kembalikan turunan pertama
+        fpp_correct = diff(fp, x)  # 6*a*x + 2*b
+        
+        # Distraktor 1: Turunan pertama (salah konsep - hanya turun sekali)
         distractors.append(fmt_expr(fp))
-        # Salah koefisien
-        distractors.append(fmt_expr(6*a*x + 4*b))  # tanpa *x
-        distractors.append(fmt_expr(3*a*x + 2*b))
+        
+        # Distraktor 2: Salah koefisien pada suku pertama (6*a menjadi 3*a atau 12*a)
+        distractors.append(fmt_expr(3*a*x + 2*b))  # lupa kali 2
+        distractors.append(fmt_expr(12*a*x + 2*b))  # kali 2 kali lagi
+        
+        # Distraktor 3: Salah koefisien pada suku kedua (2*b menjadi b atau 4*b)
+        distractors.append(fmt_expr(6*a*x + b))  # lupa kali 2
+        distractors.append(fmt_expr(6*a*x + 4*b))  # kali 2 kali lagi
+        
+        # Distraktor 4: Salah evaluasi - pakai f'(x) yang masih punya x^2
+        # Ambil suku linier dari fp sebagai distraktor (salah interpretasi)
+        fp_linear_only = 2*b*x  # hanya ambil suku linier dari turunan pertama
+        distractors.append(fmt_expr(fp_linear_only))
+        
+        # Distraktor 5: Salah urutan - turunkan dari bentuk yang sudah disederhanakan dengan salah
+        # Misal: anggap f(x) = x^2*(ax+b), turunkan dengan cara salah
+        if c_val == 0:  # jika c=0, bisa buat distraktor alternatif
+            distractors.append(fmt_expr(3*a*x + b))  # salah bentuk
+        
+        # Distraktor 6: Offset kecil pada koefisien
+        distractors.append(fmt_expr(6*a*x + 2*b + 1))  # tambah konstanta kecil
+        distractors.append(fmt_expr(6*a*x + 2*b - 1))  # kurang konstanta kecil
+        distractors.append(fmt_expr((6*a + 1)*x + 2*b))  # offset koefisien x
+        distractors.append(fmt_expr(6*a*x + (2*b + 1)))  # offset konstanta
+        
+        # Distraktor 7: Salah tanda pada salah satu suku
+        distractors.append(fmt_expr(-6*a*x + 2*b))  # salah tanda suku pertama
+        distractors.append(fmt_expr(6*a*x - 2*b))  # salah tanda suku kedua
     
     # ============================================================
     # LEVEL 14: Tangent Gradient (jawaban numerik)
@@ -237,12 +266,53 @@ def _generate_derivative_distractors(correct_answer_str, params):
                 pass
     
     # ============================================================
-    # LEVEL 15: Stationary Points (tidak bisa dibuat distraktor ekspresi)
+    # LEVEL 15: Stationary Points (bangun distraktor numerik yang sangat mirip)
     # ============================================================
     elif problem_type == 'stationary_points':
-        # Untuk stationary points, jawaban adalah nilai x, bukan ekspresi
-        # Tetap kembalikan kosong, akan dihandle oleh logika umum
-        pass
+        # Semua opsi dalam format pasangan (x, f(x)) agar 99% mirip
+        try:
+            a = params.get('a'); b = params.get('b'); c = params.get('c')
+            f_str = params.get('f_str')
+            x = Symbol('x')
+            f = sympify(f_str) if f_str else a*x**3 + b*x**2 + c
+
+            # Turunan benar dan akarnya
+            from sympy import solve, S
+            roots_true = []
+            try:
+                roots_true = solve(3*a*x**2 + 2*b*x, x)
+            except Exception:
+                pass
+
+            def fmt_pair(rx):
+                try:
+                    ry = simplify(f.subs(x, rx))
+                except Exception:
+                    ry = f.subs(x, rx)
+                return f"({simplify(rx)}, {ry})"
+
+            # Distraktor berbasis kesalahan umum pada f'(x)
+            cand_x = []
+            # Lupa faktor 3 → ax^2 + 2bx = 0
+            try:
+                cand_x += solve(a*x**2 + 2*b*x, x)
+            except Exception:
+                pass
+            # Lupa faktor 2 pada bx → 3ax^2 + b x = 0
+            try:
+                cand_x += solve(3*a*x**2 + b*x, x)
+            except Exception:
+                pass
+            # Tambahkan offset kecil terhadap akar benar jika ada
+            for r in roots_true[:2]:
+                for off_num, off_den in [(1,6), (-1,6), (1,12)]:
+                    cand_x.append(simplify(r + S(off_num)/off_den))
+
+            # Bangun pasangan (x, f(x)) dari kandidat
+            for rx in cand_x:
+                distractors.append(fmt_pair(rx))
+        except Exception:
+            pass
     
     # Filter distraktor yang sama dengan jawaban benar
     distractors = [d for d in distractors if d != correct_answer_str and d]
@@ -310,13 +380,15 @@ def generate_options(correct_answer, params=None):
     try:
         if any(tag in problem_type for tag in ['substitusi', 'faktorisasi', 'rasionalisasi', 'trigonometri', 'tak_hingga', 'derivative', 'integral']):
             # Kesalahan umum: terbalik, salah tanda, 0/1/tak terdefinisi
-            options.update(["0", "1", "tak terdefinisi"])  # aman, akan difilter nanti
+            # SKIP untuk second_derivative_poly karena harus pakai ekspresi kompleks
+            if problem_type != 'second_derivative_poly':
+                options.update(["0", "1", "tak terdefinisi"])  # aman, akan difilter nanti
             if correct_den != 0:
                 options.add(make_fraction(correct_den, correct_num))
             options.add(make_fraction(-correct_num, correct_den))
 
-        # Tambahan pengecoh berbasis nilai benar
-        if len(options) < 8:
+        # Tambahan pengecoh berbasis nilai benar (skip untuk stationary_points dan second_derivative_poly)
+        if problem_type not in ('stationary_points', 'second_derivative_poly') and len(options) < 8:
             options.add(make_fraction(correct_num * 2, correct_den))
             options.add(make_fraction(correct_num, correct_den * 2 if correct_den != 0 else 1))
             options.add(make_fraction(correct_num + correct_den, correct_den if correct_den != 0 else 1))
@@ -348,8 +420,45 @@ def generate_options(correct_answer, params=None):
     options = {opt for opt in options if opt and opt != str(correct_answer)
                and 'zoo' not in opt.lower() and 'oo' not in opt.lower()}
 
+    # Khusus level 15: paksa semua opsi menjadi pasangan (x, f(x))
+    if problem_type == 'stationary_points':
+        f_str = params.get('f_str')
+        x = Symbol('x')
+        try:
+            f_expr = sympify(f_str)
+        except Exception:
+            f_expr = None
+
+        def is_pair(s):
+            return isinstance(s, str) and s.strip().startswith('(') and ',' in s and s.strip().endswith(')')
+
+        pair_options = [opt for opt in options if is_pair(opt)]
+
+        # Jika kurang dari 3, sintetis pasangan dari jawaban benar dengan offset kecil
+        if len(pair_options) < 3 and f_expr is not None:
+            try:
+                # Ambil x dari jawaban benar
+                raw = str(correct_answer).strip()[1:-1]
+                x_part = raw.split(',')[0]
+                x_true = sympify(x_part)
+                for num, den in [(1, 12), (-1, 12), (1, 6), (-1, 6), (1, 8)]:
+                    x_alt = x_true + Rational(num, den)
+                    y_alt = f_expr.subs(x, x_alt)
+                    pair_options.append(f"({simplify(x_alt)}, {simplify(y_alt)})")
+                    if len(pair_options) >= 4:
+                        break
+            except Exception:
+                pass
+
+        # Ambil maksimal 3 distraktor pasangan
+        selected_wrong = pair_options[:3]
+        final_options = selected_wrong + [str(correct_answer)]
+        random.shuffle(final_options)
+        return final_options
+
     # Untuk turunan dan integral, hindari bilangan sederhana
     # KECUALI untuk stationary_points dan tangent_gradient yang jawabannya adalah nilai numerik
+    # Level 13 (second_derivative_poly) harus selalu pakai ekspresi kompleks
     if (is_derivative or 'integral' in problem_type) and problem_type not in ('stationary_points', 'tangent_gradient'):
         # Prioritas distraktor ekspresi kompleks
         complex_options = []

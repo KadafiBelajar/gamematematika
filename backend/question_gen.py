@@ -31,5 +31,3 @@ def generate_question(stage_name: str, level_num: int) -> Dict:
         "level": int(level_num),
         "stage": stage,
     }
-
-
