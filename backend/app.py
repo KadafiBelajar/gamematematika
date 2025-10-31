@@ -86,10 +86,24 @@ def api_get_question():
         session.modified = True
 
         # Siapkan data yang akan dikirim ke pengguna.
+        # Siapkan opsi tampilan LaTeX untuk UI, tanpa mengubah nilai asli untuk penilaian
+        try:
+            from sympy import sympify, latex as sympy_latex
+            options_display = []
+            for opt in question["options"]:
+                try:
+                    opt_latex = sympy_latex(sympify(opt))
+                    options_display.append(opt_latex)
+                except Exception:
+                    options_display.append(str(opt))
+        except Exception:
+            options_display = [str(opt) for opt in question["options"]]
+
         question_for_user = {
             "id": question["id"],
             "latex": question["latex"],
-            "options": question["options"]
+            "options": question["options"],            # nilai yang akan dikirim kembali saat submit
+            "options_display": options_display          # string LaTeX untuk ditampilkan
         }
         
         return jsonify(question_for_user)

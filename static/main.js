@@ -571,22 +571,28 @@ document.addEventListener('DOMContentLoaded', () => {
             
             currentQuestionId = question.id;
             ui.questionArea.innerHTML = `<div>$$${question.latex}$$</div>`;
+            const displayList = question.options_display && question.options_display.length === question.options.length
+                ? question.options_display
+                : question.options;
+
             question.options.forEach((option, index) => {
                 const button = document.createElement('button');
                 button.className = 'option-btn';
-                button.textContent = option;
+                // Tampilkan LaTeX, tetapi simpan nilai asli untuk dikirim saat submit
+                button.dataset.value = option;
+                button.innerHTML = `$$${displayList[index]}$$`;
                 button.style.animationDelay = `${index * 0.1}s`;
                 button.onclick = () => {
                     if (isGameOver) return;
                     document.querySelectorAll('.option-btn').forEach(btn => btn.classList.remove('selected'));
                     button.classList.add('selected');
-                    selectedAnswer = option;
+                    selectedAnswer = button.dataset.value;
                     ui.submitBtn.disabled = false;
                 };
                 ui.optionsContainer.appendChild(button);
             });
             
-            MathJax.typesetPromise([ui.questionArea]);
+            MathJax.typesetPromise([ui.questionArea, ui.optionsContainer]);
             startTimer();
         } catch (error) {
             ui.questionArea.innerHTML = `<p style="color: #ff4b4b;">Gagal memuat soal.</p>`;
