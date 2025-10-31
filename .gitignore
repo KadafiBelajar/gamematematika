@@ -1,9 +1,32 @@
 # Python
 __pycache__/
-*.pyc
-
-# Virtualenv
+*.py[cod]
+*$py.class
+*.so
+.Python
 venv/
+env/
+ENV/
+.venv
 
-# Windows
+# Flask
+instance/
+.webassets-cache
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
 desktop.ini
+
+# Vercel
+.vercel
+
+# Logs
+*.log

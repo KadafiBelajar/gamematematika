@@ -1,10 +1,22 @@
 import traceback
 import json
+import os
 from flask import Flask, render_template, jsonify, request, session, url_for, redirect
 from question_gen import generate_question
 from grader import check_answer, generate_limit_explanation
 
-app = Flask(__name__, template_folder='../templates', static_folder='../static')
+# Deteksi apakah running di Vercel
+is_vercel = os.environ.get('VERCEL', '0') == '1'
+if is_vercel:
+    # Di Vercel, path relatif dari root project
+    template_folder = 'templates'
+    static_folder = 'static'
+else:
+    # Di local, path relatif dari backend/
+    template_folder = '../templates'
+    static_folder = '../static'
+
+app = Flask(__name__, template_folder=template_folder, static_folder=static_folder)
 app.secret_key = "kunci-rahasia-yang-sangat-aman-dan-unik"
 
 # --- Rute Navigasi Utama ---
