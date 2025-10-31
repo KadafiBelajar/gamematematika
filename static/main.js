@@ -564,7 +564,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ui.submitBtn.classList.remove('hidden');
         
         try {
-            const response = await fetch(`/api/question?level=${levelNum}`);
+            const response = await fetch(`/api/question?stage=${encodeURIComponent(stageName)}&level=${levelNum}`);
             const question = await response.json();
             
             console.log('Question loaded:', question.id);

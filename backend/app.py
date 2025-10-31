@@ -1,7 +1,7 @@
 import traceback
 import json
 from flask import Flask, render_template, jsonify, request, session, url_for, redirect
-from question_gen import generate_question_by_level
+from question_gen import generate_question
 from grader import check_answer, generate_limit_explanation
 
 app = Flask(__name__, template_folder='../templates', static_folder='../static')
@@ -22,10 +22,7 @@ def stage_select():
 
 @app.route("/levels/<stage_name>")
 def level_select(stage_name):
-    """Menampilkan grid level atau halaman 'Segera Hadir'."""
-    # Jika stage adalah turunan atau integral, tampilkan halaman 'Segera Hadir'.
-    if stage_name in ['turunan', 'integral']:
-        return render_template("coming_soon.html")
+    """Menampilkan grid level untuk stage apa pun (limit, turunan, integral)."""
 
     # Inisialisasi progres di session jika belum ada.
     if 'progress' not in session:
@@ -67,9 +64,16 @@ def learn():
 def api_get_question():
     """API untuk mendapatkan soal berdasarkan level dari query parameter."""
     level = request.args.get('level', 1, type=int)
+    stage = request.args.get('stage') or request.args.get('stage_name') or session.get('current_stage')
+    if not stage:
+        # Fallback: gunakan 'limit' agar tidak error
+        stage = 'limit'
     print(f"--- Menerima permintaan untuk soal level: {level} ---")
     try:
-        question = generate_question_by_level(level)
+        # Simpan stage saat ini di session agar konsisten selama level
+        session['current_stage'] = stage
+        session.modified = True
+        question = generate_question(stage, level)
         print(f"Berhasil membuat soal ID: {question['id']} untuk level {level}")
         
         # Gunakan kunci session yang tetap untuk mencegah penumpukan data.
