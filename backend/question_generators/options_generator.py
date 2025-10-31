@@ -1,6 +1,6 @@
 import random
 from fractions import Fraction
-from sympy import sympify, sqrt, Symbol, Rational, nsimplify, diff, sin, cos, tan, Mul, Add, Pow, simplify
+from sympy import sympify, sqrt, Symbol, Rational, nsimplify, diff, sin, cos, tan, sec, exp, log, asin, atan, Mul, Add, Pow, simplify, integrate, expand
 
 
 def _generate_derivative_distractors(correct_answer_str, params):
@@ -320,6 +320,305 @@ def _generate_derivative_distractors(correct_answer_str, params):
     return distractors[:5]  # Ambil maksimal 5 distraktor terbaik
 
 
+def _generate_integral_distractors(correct_answer_str, params):
+    """
+    Membuat distraktor berbasis ekspresi matematika yang mirip dengan jawaban benar.
+    Untuk semua level integral, menghasilkan opsi salah yang kompleks dan mengecoh.
+    """
+    x = Symbol('x')
+    distractors = []
+    
+    try:
+        # Parse jawaban benar sebagai ekspresi
+        correct_expr = sympify(correct_answer_str)
+    except Exception:
+        return []
+    
+    problem_type = params.get('type', '')
+    
+    # Helper: format ekspresi ke string yang konsisten
+    def fmt_expr(expr):
+        try:
+            simp = simplify(expr)
+            # Hapus konstanta jika ada
+            if isinstance(simp, Add):
+                const = 0
+                other_terms = []
+                for term in simp.args:
+                    if term.is_constant(x):
+                        const += term
+                    else:
+                        other_terms.append(term)
+                if other_terms:
+                    result = Add(*other_terms)
+                    # Coba convert ke bentuk pecahan yang rapi
+                    try:
+                        # Gunakan nsimplify untuk mendapatkan pecahan
+                        result = nsimplify(result, rational=True)
+                        # Format ulang dengan pecahan
+                        return str(simplify(result))
+                    except:
+                        return str(simplify(result))
+            # Coba convert ke pecahan
+            try:
+                simp = nsimplify(simp, rational=True)
+                return str(simplify(simp))
+            except:
+                return str(simp)
+        except Exception:
+            return str(expr)
+    
+    # ============================================================
+    # LEVEL 1: Power Rule Basic
+    # ============================================================
+    if problem_type == 'integral_power_basic':
+        k = params.get('k', 1)
+        c = params.get('c', 1)
+        n = params.get('n', 1)
+        
+        # Jawaban benar: (k*c)/(n+1) * x^(n+1)
+        # Distraktor 1: Lupa kalikan k dan c (hanya pakai k)
+        distractors.append(fmt_expr((k / (n+1)) * x**(n+1)))
+        # Distraktor 2: Lupa bagi (n+1) - langsung kali n
+        distractors.append(fmt_expr(k * c * n * x**(n+1)))
+        # Distraktor 3: Salah pangkat (n bukan n+1)
+        distractors.append(fmt_expr((k*c / (n+1)) * x**n))
+        # Distraktor 4: Bagi dengan n bukan n+1
+        distractors.append(fmt_expr((k*c / n) * x**(n+1)))
+    
+    # ============================================================
+    # LEVEL 2: Polynomial Sum
+    # ============================================================
+    elif problem_type == 'integral_polynomial_sum':
+        coeffs = params.get('coeffs', [])
+        powers = params.get('powers', [])
+        
+        if coeffs and powers:
+            # Distraktor: lupa naikkan pangkat salah satu suku
+            distractor_terms = []
+            for i, (coeff, power) in enumerate(zip(coeffs, powers)):
+                if i == 0 and power > 0:
+                    # Lupa naikkan pangkat suku pertama
+                    distractor_terms.append((coeff / (power + 1)) * x**power)  # salah
+                else:
+                    distractor_terms.append((coeff / (power + 1)) * x**(power + 1))
+            distractors.append(fmt_expr(Add(*distractor_terms)))
+            
+            # Distraktor: salah koefisien pada salah satu suku
+            distractor_terms2 = []
+            for i, (coeff, power) in enumerate(zip(coeffs, powers)):
+                if i == 0:
+                    distractor_terms2.append((coeff / power) * x**(power + 1))  # bagi dengan power bukan power+1
+                else:
+                    distractor_terms2.append((coeff / (power + 1)) * x**(power + 1))
+            distractors.append(fmt_expr(Add(*distractor_terms2)))
+    
+    # ============================================================
+    # LEVEL 3: Root & Fraction (ekspresi kompleks yang sangat mirip)
+    # ============================================================
+    elif problem_type == 'integral_root_fraction':
+        # Distraktor: salah koefisien setelah konversi atau salah pangkat
+        try:
+            # Ambil struktur dari jawaban benar
+            if isinstance(correct_expr, Add):
+                terms = correct_expr.args
+                
+                # Ambil suku pertama dan kedua jika ada
+                if len(terms) >= 2:
+                    term1 = terms[0]
+                    term2 = terms[1]
+                    
+                    # Distraktor 1: Salah koefisien pada suku pertama (kali 2 atau bagi 2)
+                    if isinstance(term1, Mul):
+                        coeff1 = term1.args[0] if term1.args else 1
+                        rest1 = Mul(*term1.args[1:]) if len(term1.args) > 1 else term1
+                        distractors.append(fmt_expr(2 * coeff1 * rest1 + term2))  # kali 2
+                        distractors.append(fmt_expr(coeff1 / 2 * rest1 + term2))  # bagi 2
+                    
+                    # Distraktor 2: Salah pangkat pada suku pertama
+                    # Coba ganti pangkat dengan yang salah (misal +1 atau -1)
+                    try:
+                        # Ambil pangkat dari suku pertama
+                        if isinstance(term1, Mul):
+                            for arg in term1.args:
+                                if isinstance(arg, Pow):
+                                    old_pow = arg.args[1]
+                                    wrong_pow1 = old_pow + Rational(1, 2) if hasattr(old_pow, '__add__') else old_pow + 1
+                                    wrong_pow2 = old_pow - Rational(1, 2) if hasattr(old_pow, '__sub__') else old_pow - 1
+                                    # Buat variasi dengan pangkat salah
+                                    new_arg1 = Pow(arg.args[0], wrong_pow1)
+                                    new_arg2 = Pow(arg.args[0], wrong_pow2)
+                                    new_term1 = Mul(coeff1, new_arg1) if isinstance(term1, Mul) and term1.args else term1
+                                    distractors.append(fmt_expr(new_term1 + term2))
+                                    break
+                    except:
+                        pass
+                elif len(terms) == 1:
+                    # Hanya satu suku
+                    term = terms[0]
+                    if isinstance(term, Mul):
+                        coeff = term.args[0] if term.args else 1
+                        rest = Mul(*term.args[1:]) if len(term.args) > 1 else term
+                        distractors.append(fmt_expr(2 * coeff * rest))  # kali 2
+                        distractors.append(fmt_expr(coeff / 2 * rest))  # bagi 2
+        except Exception:
+            pass
+    
+    # ============================================================
+    # LEVEL 4: Expand First (ekspresi kompleks yang sangat mirip)
+    # ============================================================
+    elif problem_type == 'integral_expand_first':
+        try:
+            form = params.get('form', 'product')
+            
+            if form == 'product':
+                # Bentuk: (ax^n + b)(cx^m + d)
+                a = params.get('a', 1)
+                b = params.get('b', 1)
+                c = params.get('c', 1)
+                d = params.get('d', 1)
+                n = params.get('n', 1)
+                m = params.get('m', 1)
+                
+                # Ekspansi benar: ac*x^(n+m) + ad*x^n + bc*x^m + bd
+                # Integral benar: ac/(n+m+1)*x^(n+m+1) + ad/(n+1)*x^(n+1) + bc/(m+1)*x^(m+1) + bd*x
+                
+                # Distraktor 1: Salah koefisien pada suku pertama (ac menjadi a atau ac*2)
+                distractors.append(fmt_expr((a / (n+m+1)) * x**(n+m+1) + (a*d / (n+1)) * x**(n+1) + (b*c / (m+1)) * x**(m+1) + b*d * x))
+                distractors.append(fmt_expr((2*a*c / (n+m+1)) * x**(n+m+1) + (a*d / (n+1)) * x**(n+1) + (b*c / (m+1)) * x**(m+1) + b*d * x))
+                
+                # Distraktor 2: Salah pangkat pada salah satu suku
+                distractors.append(fmt_expr((a*c / (n+m+1)) * x**(n+m) + (a*d / (n+1)) * x**(n+1) + (b*c / (m+1)) * x**(m+1) + b*d * x))  # pangkat n+m bukan n+m+1
+                distractors.append(fmt_expr((a*c / (n+m+1)) * x**(n+m+1) + (a*d / (n+1)) * x**n + (b*c / (m+1)) * x**(m+1) + b*d * x))  # pangkat n bukan n+1
+                
+                # Distraktor 3: Bagi dengan salah satu koefisien (lupa bagi dengan pangkat+1 pada salah satu suku)
+                distractors.append(fmt_expr((a*c / (n+m)) * x**(n+m+1) + (a*d / (n+1)) * x**(n+1) + (b*c / (m+1)) * x**(m+1) + b*d * x))  # bagi n+m bukan n+m+1
+                
+            elif form == 'multiply':
+                # Bentuk: x^n(ax^m + bx + c)
+                n = params.get('n', 1)
+                a = params.get('a', 1)
+                b = params.get('b', 1)
+                c = params.get('c', 1)
+                m = params.get('m', 1)
+                
+                # Integral benar: a/(n+m+1)*x^(n+m+1) + b/(n+2)*x^(n+2) + c/(n+1)*x^(n+1)
+                
+                # Distraktor: salah koefisien atau pangkat
+                distractors.append(fmt_expr((a / (n+m)) * x**(n+m+1) + (b / (n+2)) * x**(n+2) + (c / (n+1)) * x**(n+1)))  # bagi n+m bukan n+m+1
+                distractors.append(fmt_expr((2*a / (n+m+1)) * x**(n+m+1) + (b / (n+2)) * x**(n+2) + (c / (n+1)) * x**(n+1)))  # kali 2
+                distractors.append(fmt_expr((a / (n+m+1)) * x**(n+m) + (b / (n+2)) * x**(n+2) + (c / (n+1)) * x**(n+1)))  # pangkat n+m bukan n+m+1
+                
+            elif form == 'divide':
+                # Bentuk: (ax^n + bx^m)/(cx^p)
+                a = params.get('a', 1)
+                b = params.get('b', 1)
+                c = params.get('c', 1)
+                n = params.get('n', 1)
+                m = params.get('m', 1)
+                p = params.get('p', 1)
+                
+                # Setelah dibagi: (a/c)*x^(n-p) + (b/c)*x^(m-p)
+                # Integral benar: (a/c)/(n-p+1)*x^(n-p+1) + (b/c)/(m-p+1)*x^(m-p+1)
+                
+                # Distraktor: salah koefisien atau pangkat
+                distractors.append(fmt_expr((a/c) / (n-p) * x**(n-p+1) + (b/c) / (m-p+1) * x**(m-p+1)))  # bagi n-p bukan n-p+1
+                distractors.append(fmt_expr((2*a/c) / (n-p+1) * x**(n-p+1) + (b/c) / (m-p+1) * x**(m-p+1)))  # kali 2
+                distractors.append(fmt_expr((a/c) / (n-p+1) * x**(n-p) + (b/c) / (m-p+1) * x**(m-p+1)))  # pangkat n-p bukan n-p+1
+                
+        except Exception as e:
+            pass
+    
+    # ============================================================
+    # LEVEL 5: Trig Basic
+    # ============================================================
+    elif problem_type == 'integral_trig_basic':
+        a = params.get('a', 1)
+        b = params.get('b', 1)
+        c = params.get('c', 0)
+        
+        # Distraktor: salah tanda pada sin/cos
+        # ∫ sin(x) = -cos(x), tapi pemain mungkin pakai +cos(x)
+        distractors.append(fmt_expr(a * cos(x)))  # seharusnya -a*cos untuk sin
+        distractors.append(fmt_expr(-b * sin(x)))  # seharusnya b*sin untuk cos
+        
+        # Distraktor: lupa koefisien
+        if c != 0:
+            distractors.append(fmt_expr(-a * cos(x) + b * sin(x)))  # lupa sec^2
+    
+    # ============================================================
+    # LEVEL 6: Definite Basic
+    # ============================================================
+    elif problem_type == 'integral_definite_basic':
+        k = params.get('k', 1)
+        n = params.get('n', 1)
+        a = params.get('a', 0)
+        b = params.get('b', 1)
+        
+        # Distraktor: salah evaluasi batas
+        # Pakai a^2 bukan (b^n - a^n)
+        wrong1 = k * b**n  # hanya evaluasi di b
+        distractors.append(fmt_expr(wrong1))
+        wrong2 = k * a**n  # hanya evaluasi di a
+        distractors.append(fmt_expr(wrong2))
+        # Lupa kurangi
+        wrong3 = k / (n+1) * b**(n+1)  # hanya F(b)
+        distractors.append(fmt_expr(wrong3))
+    
+    # ============================================================
+    # LEVEL 7: Substitution Basic
+    # ============================================================
+    elif problem_type == 'integral_substitution_basic':
+        k = params.get('k', 1)
+        a = params.get('a', 1)
+        b = params.get('b', 0)
+        n = params.get('n', 1)
+        
+        # Distraktor: lupa bagi dengan a (faktor dari du)
+        inner = a*x + b
+        distractors.append(fmt_expr((k / (n+1)) * inner**(n+1)))  # lupa /a
+        
+        # Distraktor: salah pangkat
+        distractors.append(fmt_expr((k / (a*(n+1))) * inner**n))  # pangkat n bukan n+1
+    
+    # ============================================================
+    # LEVEL 8-15: Advanced Techniques
+    # ============================================================
+    elif problem_type in ('integral_substitution_advanced', 'integral_by_parts', 
+                          'integral_trig_identity', 'integral_trig_substitution',
+                          'integral_partial_fractions', 'integral_trick_substitution_vs_parts',
+                          'integral_definite_trick', 'integral_seemingly_impossible'):
+        # Untuk teknik lanjutan, buat distraktor dengan kesalahan umum:
+        # 1. Salah teknik (pakai teknik yang salah)
+        # 2. Lupa faktor konstan
+        # 3. Salah tanda
+        
+        try:
+            # Coba parse jawaban dan buat variasi
+            if 'x' in str(correct_expr):
+                # Tambahkan/mengurangi konstanta kecil
+                if isinstance(correct_expr, Add):
+                    # Tambah konstanta ke salah satu suku
+                    first_term = correct_expr.args[0] if correct_expr.args else correct_expr
+                    distractors.append(fmt_expr(first_term + 1))
+                    distractors.append(fmt_expr(first_term - 1))
+                # Ganti tanda pada salah satu bagian
+                if '*' in str(correct_expr) or '/' in str(correct_expr):
+                    # Ganti salah satu koefisien
+                    try:
+                        wrong = correct_expr.subs(x, 2*x)  # Ganti x dengan 2x (salah)
+                        distractors.append(fmt_expr(wrong))
+                    except:
+                        pass
+        except:
+            pass
+    
+    # Filter distraktor yang sama dengan jawaban benar
+    distractors = [d for d in distractors if d != correct_answer_str and d and 'lupa' not in str(d) and 'salah' not in str(d)]
+    
+    return distractors[:5]
+
+
 def generate_options(correct_answer, params=None):
     """
     Membuat 3 pilihan jawaban salah yang berasal dari kesalahan umum dalam perhitungan.
@@ -372,23 +671,26 @@ def generate_options(correct_answer, params=None):
 
     correct_num, correct_den = extract_fraction(str(correct_answer))
 
-    # Cek apakah ini soal turunan (di luar try agar tetap terdefinisi)
+    # Cek apakah ini soal turunan atau integral (di luar try agar tetap terdefinisi)
     is_derivative = problem_type.startswith('derivative') or 'product_' in problem_type or 'quotient_' in problem_type or 'trig_' in problem_type or problem_type in {
         'chain_power', 'chain_trig', 'product_trig', 'quotient_trig', 'second_derivative_poly', 'tangent_gradient', 'stationary_points'
     }
+    is_integral = problem_type.startswith('integral') or 'integral' in problem_type
 
     try:
         if any(tag in problem_type for tag in ['substitusi', 'faktorisasi', 'rasionalisasi', 'trigonometri', 'tak_hingga', 'derivative', 'integral']):
             # Kesalahan umum: terbalik, salah tanda, 0/1/tak terdefinisi
-            # SKIP untuk second_derivative_poly karena harus pakai ekspresi kompleks
-            if problem_type != 'second_derivative_poly':
+            # SKIP untuk second_derivative_poly dan semua integral karena harus pakai ekspresi kompleks
+            if problem_type != 'second_derivative_poly' and not is_integral:
                 options.update(["0", "1", "tak terdefinisi"])  # aman, akan difilter nanti
-            if correct_den != 0:
+            # Untuk integral, jangan tambahkan pecahan sederhana
+            if not is_integral and correct_den != 0:
                 options.add(make_fraction(correct_den, correct_num))
-            options.add(make_fraction(-correct_num, correct_den))
+            if not is_integral:
+                options.add(make_fraction(-correct_num, correct_den))
 
-        # Tambahan pengecoh berbasis nilai benar (skip untuk stationary_points dan second_derivative_poly)
-        if problem_type not in ('stationary_points', 'second_derivative_poly') and len(options) < 8:
+        # Tambahan pengecoh berbasis nilai benar (skip untuk stationary_points, second_derivative_poly, dan semua integral)
+        if problem_type not in ('stationary_points', 'second_derivative_poly') and not is_integral and len(options) < 8:
             options.add(make_fraction(correct_num * 2, correct_den))
             options.add(make_fraction(correct_num, correct_den * 2 if correct_den != 0 else 1))
             options.add(make_fraction(correct_num + correct_den, correct_den if correct_den != 0 else 1))
@@ -404,21 +706,37 @@ def generate_options(correct_answer, params=None):
                 options.add(distractor)
 
         # ============================================================
-        # Distraktor KHUSUS untuk INTEGRAL (integral_basic)
+        # Distraktor KHUSUS untuk INTEGRAL
         # ============================================================
         if 'integral' in problem_type:
-            # Power rule kebalik (n-1), lupa bagi dengan pangkat baru, salah tanda trig
-            options.add('power_rule_terbalik')
-            options.add('lupa_bagi_pangkat_baru')
-            options.add('salah_tanda_trig_integral')
+            # Panggil fungsi khusus untuk integral
+            integral_distractors = _generate_integral_distractors(str(correct_answer), params)
+            for distractor in integral_distractors:
+                options.add(distractor)
 
     except Exception:
         pass
 
     options.add(str(correct_answer))
 
-    options = {opt for opt in options if opt and opt != str(correct_answer)
-               and 'zoo' not in opt.lower() and 'oo' not in opt.lower()}
+    # Filter opsi: hapus kosong, identik dengan jawaban benar, zoo/oo, dan untuk integral/turunan hapus bilangan sederhana
+    filtered_options = []
+    simple_numbers = {'0', '1', '-1', '2', '-2', '1/2', '-1/2', '1/3', '-1/3', 'tak terdefinisi'}
+    
+    for opt in options:
+        if not opt or opt == str(correct_answer):
+            continue
+        if 'zoo' in opt.lower() or 'oo' in opt.lower():
+            continue
+        
+        # Untuk integral dan turunan (kecuali stationary_points, tangent_gradient), filter bilangan sederhana
+        if (is_integral or is_derivative) and problem_type not in ('stationary_points', 'tangent_gradient'):
+            if opt.strip() in simple_numbers or opt.strip() in {'0', '1', '-1', '2', '-2'}:
+                continue  # Skip bilangan sederhana untuk integral/turunan
+        
+        filtered_options.append(opt)
+    
+    options = set(filtered_options)
 
     # Khusus level 15: paksa semua opsi menjadi pasangan (x, f(x))
     if problem_type == 'stationary_points':
@@ -459,7 +777,8 @@ def generate_options(correct_answer, params=None):
     # Untuk turunan dan integral, hindari bilangan sederhana
     # KECUALI untuk stationary_points dan tangent_gradient yang jawabannya adalah nilai numerik
     # Level 13 (second_derivative_poly) harus selalu pakai ekspresi kompleks
-    if (is_derivative or 'integral' in problem_type) and problem_type not in ('stationary_points', 'tangent_gradient'):
+    # SEMUA level integral harus pakai ekspresi kompleks
+    if (is_derivative or is_integral) and problem_type not in ('stationary_points', 'tangent_gradient'):
         # Prioritas distraktor ekspresi kompleks
         complex_options = []
         simple_options = []
