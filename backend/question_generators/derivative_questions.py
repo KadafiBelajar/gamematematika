@@ -189,7 +189,7 @@ def _level13():
     f = a*x**3 + b*x**2 + c*x
     fpp = diff(f, x, 2)
     return {
-        "latex": rf"\text{{Cari }} f''(x) \text{ dari } f(x) = {latex(f)}",
+        "latex": rf"\text{{Cari }} f''(x) \\text{{ dari }} f(x) = {latex(f)}",
         "answer": _fmt_answer(fpp),
         "params": {"type": "second_derivative_poly"}
     }
@@ -204,7 +204,7 @@ def _level14():
     fp = diff(f, x)
     ans = fp.subs(x, c0)
     return {
-        "latex": rf"\text{{Gradien garis singgung }} f(x)={latex(f)} \text{ di } x={c0} \text{ adalah }?",
+        "latex": rf"\text{{Gradien garis singgung }} f(x)={latex(f)} \\text{{ di }} x={c0} \\text{{ adalah }}?",
         "answer": _fmt_answer(ans),
         "params": {"type": "tangent_gradient", "point": c0}
     }
@@ -224,7 +224,7 @@ def _level15():
     else:
         ans = ", ".join(str(simplify(pt)) for pt in critical_points)
     return {
-        "latex": rf"\text{{Titik stasioner dari }} f(x)={latex(f)} \text{ (nilai } x)\text{ adalah?}",
+        "latex": rf"\text{{Titik stasioner dari }} f(x)={latex(f)} \\text{{ (nilai x) adalah?}}",
         "answer": ans,
         "params": {"type": "stationary_points"}
     }
