@@ -13,12 +13,14 @@ if is_vercel:
     backend_dir = os.path.dirname(current_file)  # /var/task/backend
     parent_dir = os.path.dirname(backend_dir)  # /var/task
     template_folder = os.path.join(parent_dir, 'templates')  # /var/task/templates
-    static_folder = os.path.join(parent_dir, 'static')  # /var/task/static
+    static_folder = os.path.join(parent_dir, 'public')  # /var/task/public (Vercel menggunakan public/)
     # Debug logging untuk Vercel
     print(f"[VERCEL DEBUG] cwd: {os.getcwd()}")
     print(f"[VERCEL DEBUG] __file__: {current_file}")
     print(f"[VERCEL DEBUG] template_folder: {template_folder}")
+    print(f"[VERCEL DEBUG] static_folder: {static_folder}")
     print(f"[VERCEL DEBUG] template folder exists: {os.path.exists(template_folder)}")
+    print(f"[VERCEL DEBUG] static folder exists: {os.path.exists(static_folder)}")
 else:
     # Di local, path relatif dari backend/
     template_folder = '../templates'
