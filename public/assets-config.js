@@ -11,14 +11,14 @@ const ASSETS_CONFIG = {
     player: {
         // Animasi idle (karakter diam)
         idle: {
-            image: '/static/assets/characters/player/idle.gif',  // atau .webp, .png
+            image: '/public/assets/characters/player/idle.gif',  // atau .webp, .png
             width: 150,   // lebar dalam pixel
             height: 150   // tinggi dalam pixel
         },
         
         // Animasi saat menyerang
         attack: {
-            image: '/static/assets/characters/player/attack.gif',
+            image: '/public/assets/characters/player/attack.gif',
             width: 150,
             height: 150,
             duration: 500  // durasi animasi dalam milidetik
@@ -26,7 +26,7 @@ const ASSETS_CONFIG = {
         
         // Animasi saat kena serangan
         hit: {
-            image: '/static/assets/characters/player/hit.gif',
+            image: '/public/assets/characters/player/hit.gif',
             width: 150,
             height: 150,
             duration: 500
@@ -42,14 +42,14 @@ const ASSETS_CONFIG = {
     boss: {
         // Animasi idle (boss diam)
         idle: {
-            image: '/static/assets/characters/boss/idle.gif',
+            image: '/public/assets/characters/boss/idle.gif',
             width: 150,
             height: 150
         },
         
         // Animasi saat menyerang
         attack: {
-            image: '/static/assets/characters/boss/attack.gif',
+            image: '/public/assets/characters/boss/attack.gif',
             width: 150,
             height: 150,
             duration: 500
@@ -57,7 +57,7 @@ const ASSETS_CONFIG = {
         
         // Animasi saat kena serangan
         hit: {
-            image: '/static/assets/characters/boss/hit.gif',
+            image: '/public/assets/characters/boss/hit.gif',
             width: 150,
             height: 150,
             duration: 500
@@ -73,7 +73,7 @@ const ASSETS_CONFIG = {
     sounds: {
         // Background music (main theme)
         backgroundMusic: {
-            src: '/static/assets/sounds/background-music.mp3',
+            src: '/public/assets/sounds/background-music.mp3',
             volume: 0.3,    // volume 0.0 - 1.0
             loop: true,     // apakah musik berulang
             enabled: true   // enable/disable musik
@@ -81,70 +81,70 @@ const ASSETS_CONFIG = {
         
         // Sound effect saat player menyerang
         playerAttack: {
-            src: '/static/assets/sounds/player-attack.mp3',
+            src: '/public/assets/sounds/player-attack.mp3',
             volume: 0.5,
             enabled: true
         },
         
         // Sound effect saat boss menyerang
         bossAttack: {
-            src: '/static/assets/sounds/boss-attack.mp3',
+            src: '/public/assets/sounds/boss-attack.mp3',
             volume: 0.5,
             enabled: true
         },
         
         // Sound effect saat player kena damage
         playerHit: {
-            src: '/static/assets/sounds/player-hit.mp3',
+            src: '/public/assets/sounds/player-hit.mp3',
             volume: 0.4,
             enabled: true
         },
         
         // Sound effect saat boss kena damage
         bossHit: {
-            src: '/static/assets/sounds/boss-hit.mp3',
+            src: '/public/assets/sounds/boss-hit.mp3',
             volume: 0.4,
             enabled: true
         },
         
         // Sound effect saat heal
         heal: {
-            src: '/static/assets/sounds/heal.mp3',
+            src: '/public/assets/sounds/heal.mp3',
             volume: 0.5,
             enabled: true
         },
         
         // Sound effect saat jawaban benar
         correct: {
-            src: '/static/assets/sounds/correct.mp3',
+            src: '/public/assets/sounds/correct.mp3',
             volume: 0.6,
             enabled: true
         },
         
         // Sound effect saat jawaban salah
         wrong: {
-            src: '/static/assets/sounds/wrong.mp3',
+            src: '/public/assets/sounds/wrong.mp3',
             volume: 0.5,
             enabled: true
         },
         
         // Sound effect saat victory
         victory: {
-            src: '/static/assets/sounds/victory.mp3',
+            src: '/public/assets/sounds/victory.mp3',
             volume: 0.7,
             enabled: true
         },
         
         // Sound effect saat defeat
         defeat: {
-            src: '/static/assets/sounds/defeat.mp3',
+            src: '/public/assets/sounds/defeat.mp3',
             volume: 0.6,
             enabled: true
         },
         
         // Sound effect timer warning (10 detik terakhir)
         timerWarning: {
-            src: '/static/assets/sounds/timer-warning.mp3',
+            src: '/public/assets/sounds/timer-warning.mp3',
             volume: 0.3,
             enabled: true
         }
