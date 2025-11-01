@@ -8,11 +8,16 @@ from grader import check_answer, generate_limit_explanation
 # Deteksi apakah running di Vercel
 is_vercel = os.environ.get('VERCEL', '0') == '1'
 if is_vercel:
-    # Di Vercel, dari root project (working directory di root saat runtime dari api/)
-    template_folder = 'templates'
-    static_folder = 'static'
+    # Di Vercel: hitung path absolut dari lokasi backend/app.py
+    current_file = os.path.abspath(__file__)  # /var/task/backend/app.py
+    backend_dir = os.path.dirname(current_file)  # /var/task/backend
+    parent_dir = os.path.dirname(backend_dir)  # /var/task
+    template_folder = os.path.join(parent_dir, 'templates')  # /var/task/templates
+    static_folder = os.path.join(parent_dir, 'static')  # /var/task/static
     # Debug logging untuk Vercel
-    print(f"[VERCEL DEBUG] cwd: {os.getcwd()}, template_folder: {template_folder}")
+    print(f"[VERCEL DEBUG] cwd: {os.getcwd()}")
+    print(f"[VERCEL DEBUG] __file__: {current_file}")
+    print(f"[VERCEL DEBUG] template_folder: {template_folder}")
     print(f"[VERCEL DEBUG] template folder exists: {os.path.exists(template_folder)}")
 else:
     # Di local, path relatif dari backend/
