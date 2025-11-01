@@ -2,6 +2,7 @@ import traceback
 import json
 import os
 from flask import Flask, render_template, jsonify, request, session, url_for, redirect
+from flask_cors import CORS
 from question_gen import generate_question
 from grader import check_answer, generate_limit_explanation
 
@@ -28,6 +29,16 @@ else:
 
 app = Flask(__name__, template_folder=template_folder, static_folder=static_folder)
 app.secret_key = "kunci-rahasia-yang-sangat-aman-dan-unik"
+
+# Enable CORS untuk mendukung akses dari aplikasi mobile (Cursor APK)
+# Ini memungkinkan request dari domain berbeda (cross-origin)
+CORS(app, supports_credentials=True, resources={
+    r"/api/*": {
+        "origins": "*",  # Dalam production, ganti dengan domain spesifik
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"]
+    }
+})
 
 # --- Rute Navigasi Utama ---
 
@@ -249,4 +260,6 @@ def toggle_dev_mode():
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    # Listen on all network interfaces (0.0.0.0) untuk mendukung akses dari Groupy tunnel
+    # Port 5000 adalah default, bisa diganti sesuai kebutuhan
+    app.run(host='0.0.0.0', port=5000, debug=True)

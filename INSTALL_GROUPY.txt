@@ -1,0 +1,100 @@
+=============================================================
+CARA INSTALL GROUPY - Pilih salah satu metode
+=============================================================
+
+CATATAN: Groupy adalah contoh nama layanan tunneling. 
+Dalam praktiknya, gunakan salah satu dari layanan berikut:
+
+--- METODE 1: ngrok (PALING DIREKOMENDASIKAN) ---
+
+1. Install ngrok:
+   
+   Mac (Homebrew):
+   $ brew install ngrok
+   
+   Windows (Chocolatey):
+   > choco install ngrok
+   
+   Linux:
+   $ curl -s https://ngrok-agent.s3.amazonaws.com/ngrok.asc | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null
+   $ echo "deb https://ngrok-agent.s3.amazonaws.com buster main" | sudo tee /etc/apt/sources.list.d/ngrok.list
+   $ sudo apt update && sudo apt install ngrok
+   
+   Manual (semua OS):
+   - Download dari https://ngrok.com/download
+   - Extract dan jalankan
+
+2. Sign up (gratis):
+   $ ngrok config add-authtoken YOUR_TOKEN
+   (Dapatkan token dari https://dashboard.ngrok.com/get-started/your-authtoken)
+
+3. Jalankan:
+   $ ngrok http 5000
+
+
+--- METODE 2: localtunnel (TERMUDAH, tanpa registrasi) ---
+
+1. Install (butuh Node.js):
+   $ npm install -g localtunnel
+
+2. Jalankan:
+   $ lt --port 5000
+
+
+--- METODE 3: cloudflared (Cloudflare Tunnel) ---
+
+1. Install:
+   
+   Mac:
+   $ brew install cloudflare/cloudflare/cloudflared
+   
+   Windows:
+   - Download dari https://github.com/cloudflare/cloudflared/releases
+   
+   Linux:
+   $ wget https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
+   $ sudo dpkg -i cloudflared-linux-amd64.deb
+
+2. Jalankan:
+   $ cloudflared tunnel --url http://localhost:5000
+
+
+--- METODE 4: serveo (SSH-based, tanpa install) ---
+
+$ ssh -R 80:localhost:5000 serveo.net
+
+
+--- METODE 5: Untuk Development di Jaringan Lokal ---
+
+Jika smartphone dan komputer di WiFi yang sama:
+
+1. Cari IP komputer:
+   
+   Linux/Mac:
+   $ ifconfig | grep "inet "
+   $ ip addr show
+   
+   Windows:
+   > ipconfig
+
+2. Gunakan IP lokal:
+   http://192.168.x.x:5000
+
+
+=============================================================
+REKOMENDASI
+=============================================================
+
+Untuk production/testing jangka panjang:
+✅ ngrok (paling stabil, fitur lengkap)
+
+Untuk testing cepat tanpa registrasi:
+✅ localtunnel (paling mudah)
+
+Untuk keamanan tinggi:
+✅ cloudflared (Cloudflare infrastructure)
+
+Untuk development internal:
+✅ Gunakan IP lokal (WiFi yang sama)
+
+=============================================================
