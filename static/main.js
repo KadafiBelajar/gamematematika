@@ -516,29 +516,29 @@ document.addEventListener('DOMContentLoaded', () => {
             ui.feedbackArea.textContent = '✓ Benar! Serangan berhasil!';
             ui.feedbackArea.style.color = '#10b981';
             
-            // Play correct sound
-            if (soundManager) soundManager.play('correct');
+            // Play player attack sound
+            if (soundManager) soundManager.play('playerAttack');
             
             // Animate player attack (no sound, already played above)
             animateAttack('player', false);
             createSlashEffect('boss');
             
             setTimeout(() => {
-                applyDamageAndCheckStatus('boss', 10); // Serang boss
+                applyDamageAndCheckStatus('boss', 10); // Serang boss (plays bossHit)
             }, 300);
         } else {
             ui.feedbackArea.textContent = `✗ Salah! Jawaban yang benar: ${result.canonical_answer}`;
             ui.feedbackArea.style.color = '#ff4b4b';
             
-            // Play wrong sound
-            if (soundManager) soundManager.play('wrong');
+            // Play boss attack sound
+            if (soundManager) soundManager.play('bossAttack');
             
             // Animate boss attack (no sound, already played above)
             animateAttack('boss', false);
             createSlashEffect('player');
             
             setTimeout(() => {
-                applyDamageAndCheckStatus('player', 20); // Serang player
+                applyDamageAndCheckStatus('player', 20); // Serang player (plays playerHit)
             }, 300);
         }
 
