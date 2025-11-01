@@ -2,14 +2,168 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Learning Mode</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Training Mode - Nowled</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="{{ url_for('static', filename='assets-config.js') }}"></script>
+    <script src="{{ url_for('static', filename='sound-manager.js') }}"></script>
+    <script src="{{ url_for('static', filename='main.js') }}"></script>
+    <script src="{{ url_for('static', filename='learn-mode.js') }}"></script>
+    <script>
+      MathJax = {
+        tex: { inlineMath: [['$', '$']], displayMath: [['$$', '$$']] },
+        svg: { fontCache: 'global' }
+      };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" id="MathJax-script"></script>
 </head>
-<body>
-    <div class="container">
-        <h1>Mode Belajar</h1>
-        <p>Halaman ini akan berisi mode belajar interaktif.</p>
-        <a href="{{ url_for('index') }}">Kembali ke Menu</a>
-    </div>
+<body class="learn-mode">
+    <!-- Navigation Sidebar -->
+    <nav class="learn-sidebar" id="learnSidebar">
+        <div class="sidebar-header">
+            <h2>Training Mode</h2>
+            <button class="close-sidebar-btn" id="closeSidebar" onclick="closeSidebar()">✕</button>
+        </div>
+        
+        <div class="sidebar-content">
+            <div class="nav-section">
+                <div class="nav-section-title" onclick="toggleSection('limit-section')">
+                    <span>📊 Limit</span>
+                    <span class="section-toggle">▼</span>
+                </div>
+                <div class="nav-section-content" id="limit-section">
+                    <a href="/learn?topic=limit&level=1" class="nav-item">Level 1: Substitusi Linear</a>
+                    <a href="/learn?topic=limit&level=2" class="nav-item">Level 2: Substitusi Kuadrat</a>
+                    <a href="/learn?topic=limit&level=3" class="nav-item">Level 3: Substitusi Rasional</a>
+                    <a href="/learn?topic=limit&level=4" class="nav-item">Level 4: Faktorisasi Linear</a>
+                    <a href="/learn?topic=limit&level=5" class="nav-item">Level 5: Faktorisasi Kuadrat</a>
+                    <a href="/learn?topic=limit&level=6" class="nav-item">Level 6: Faktorisasi Polinomial</a>
+                    <a href="/learn?topic=limit&level=7" class="nav-item">Level 7: Rasionalisasi Root</a>
+                    <a href="/learn?topic=limit&level=8" class="nav-item">Level 8: Rasionalisasi Ganda</a>
+                    <a href="/learn?topic=limit&level=9" class="nav-item">Level 9: Rasionalisasi Beda Akar</a>
+                    <a href="/learn?topic=limit&level=10" class="nav-item">Level 10: Limit Trigono Dasar</a>
+                    <a href="/learn?topic=limit&level=11" class="nav-item">Level 11: Limit Trigono Lanjutan</a>
+                    <a href="/learn?topic=limit&level=12" class="nav-item">Level 12: Limit Trigono Identitas</a>
+                    <a href="/learn?topic=limit&level=13" class="nav-item">Level 13: Tak Hingga Rasional</a>
+                    <a href="/learn?topic=limit&level=14" class="nav-item">Level 14: Tak Hingga dengan Akar</a>
+                    <a href="/learn?topic=limit&level=15" class="nav-item">Level 15: Tak Hingga Lanjutan</a>
+                </div>
+            </div>
+            
+            <div class="nav-section">
+                <div class="nav-section-title" onclick="toggleSection('turunan-section')">
+                    <span>📈 Turunan</span>
+                    <span class="section-toggle">▼</span>
+                </div>
+                <div class="nav-section-content" id="turunan-section">
+                    <a href="/learn?topic=turunan&level=1" class="nav-item">Level 1: Power Rule Dasar</a>
+                    <a href="/learn?topic=turunan&level=2" class="nav-item">Level 2: Polinomial</a>
+                    <a href="/learn?topic=turunan&level=3" class="nav-item">Level 3: Pangkat Negatif & Akar</a>
+                    <a href="/learn?topic=turunan&level=4" class="nav-item">Level 4: Product Rule Linear</a>
+                    <a href="/learn?topic=turunan&level=5" class="nav-item">Level 5: Product Rule Kuadrat</a>
+                    <a href="/learn?topic=turunan&level=6" class="nav-item">Level 6: Quotient Rule Linear</a>
+                    <a href="/learn?topic=turunan&level=7" class="nav-item">Level 7: Quotient Rule Kuadrat</a>
+                    <a href="/learn?topic=turunan&level=8" class="nav-item">Level 8: Chain Rule Power</a>
+                    <a href="/learn?topic=turunan&level=9" class="nav-item">Level 9: Trigonometri Dasar</a>
+                    <a href="/learn?topic=turunan&level=10" class="nav-item">Level 10: Chain Rule Trigono</a>
+                    <a href="/learn?topic=turunan&level=11" class="nav-item">Level 11: Product & Trigono</a>
+                    <a href="/learn?topic=turunan&level=12" class="nav-item">Level 12: Quotient & Trigono</a>
+                    <a href="/learn?topic=turunan&level=13" class="nav-item">Level 13: Turunan Kedua</a>
+                    <a href="/learn?topic=turunan&level=14" class="nav-item">Level 14: Gradien Garis Singgung</a>
+                    <a href="/learn?topic=turunan&level=15" class="nav-item">Level 15: Titik Stasioner</a>
+                </div>
+            </div>
+            
+            <div class="nav-section">
+                <div class="nav-section-title" onclick="toggleSection('integral-section')">
+                    <span>📉 Integral</span>
+                    <span class="section-toggle">▼</span>
+                </div>
+                <div class="nav-section-content" id="integral-section">
+                    <a href="/learn?topic=integral&level=1" class="nav-item">Level 1: Power Rule Dasar</a>
+                    <a href="/learn?topic=integral&level=2" class="nav-item">Level 2: Polinomial</a>
+                    <a href="/learn?topic=integral&level=3" class="nav-item">Level 3: Akar & Pecahan</a>
+                    <a href="/learn?topic=integral&level=4" class="nav-item">Level 4: Distribusi & Ekspansi</a>
+                    <a href="/learn?topic=integral&level=5" class="nav-item">Level 5: Trigonometri Dasar</a>
+                    <a href="/learn?topic=integral&level=6" class="nav-item">Level 6: Integral Tentu</a>
+                    <a href="/learn?topic=integral&level=7" class="nav-item">Level 7: Substitusi Dasar</a>
+                    <a href="/learn?topic=integral&level=8" class="nav-item">Level 8: Substitusi Lanjutan</a>
+                    <a href="/learn?topic=integral&level=9" class="nav-item">Level 9: Integral Parsial</a>
+                    <a href="/learn?topic=integral&level=10" class="nav-item">Level 10: Identitas Trigono</a>
+                    <a href="/learn?topic=integral&level=11" class="nav-item">Level 11: Substitusi Trigono</a>
+                    <a href="/learn?topic=integral&level=12" class="nav-item">Level 12: Pecahan Parsial</a>
+                    <a href="/learn?topic=integral&level=13" class="nav-item">Level 13: Substitusi vs Parsial</a>
+                    <a href="/learn?topic=integral&level=14" class="nav-item">Level 14: Trik Integral Tentu</a>
+                    <a href="/learn?topic=integral&level=15" class="nav-item">Level 15: Integral "Mustahil"</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Main Content -->
+    <main class="learn-main">
+        <div class="learn-header">
+            <button class="menu-toggle-btn" onclick="toggleSidebar()">☰ Menu</button>
+            <a href="{{ url_for('index') }}" class="back-btn">← Kembali ke Menu</a>
+        </div>
+        
+        <article class="learn-content" id="learnContent">
+            <h1>Selamat Datang di Training Mode! 📚</h1>
+            <p class="intro">
+                Training Mode adalah panduan lengkap untuk mempelajari Limit, Turunan, dan Integral. 
+                Setiap level memiliki penjelasan detail, contoh soal, dan latihan yang akan membantu Anda menguasai setiap konsep.
+            </p>
+            
+            <div class="content-grid">
+                <div class="topic-card">
+                    <h2>📊 Limit</h2>
+                    <p>Pelajari cara menghitung limit fungsi aljabar dan trigonometri</p>
+                    <a href="/learn?topic=limit&level=1" class="topic-btn">Mulai Belajar Limit</a>
+                </div>
+                
+                <div class="topic-card">
+                    <h2>📈 Turunan</h2>
+                    <p>Kuasi konsep turunan dari level dasar hingga aplikasi lanjutan</p>
+                    <a href="/learn?topic=turunan&level=1" class="topic-btn">Mulai Belajar Turunan</a>
+                </div>
+                
+                <div class="topic-card">
+                    <h2>📉 Integral</h2>
+                    <p>Pelajari teknik integrasi dari basic hingga advanced</p>
+                    <a href="/learn?topic=integral&level=1" class="topic-btn">Mulai Belajar Integral</a>
+                </div>
+            </div>
+            
+            <div class="info-box tip">
+                <h3>💡 Tips Belajar</h3>
+                <ul>
+                    <li>Baca penjelasan secara menyeluruh sebelum melihat contoh</li>
+                    <li>Coba selesaikan latihan sendiri sebelum melihat jawaban</li>
+                    <li>Uji pemahaman Anda dengan bermain di Play Mode</li>
+                </ul>
+            </div>
+        </article>
+    </main>
+    
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('learnSidebar');
+            sidebar.classList.toggle('active');
+        }
+        
+        function closeSidebar() {
+            const sidebar = document.getElementById('learnSidebar');
+            sidebar.classList.remove('active');
+        }
+        
+        function toggleSection(sectionId) {
+            const section = document.getElementById(sectionId);
+            const toggle = section.previousElementSibling.querySelector('.section-toggle');
+            section.classList.toggle('collapsed');
+            toggle.textContent = section.classList.contains('collapsed') ? '▶' : '▼';
+        }
+        
+    </script>
 </body>
 </html>
