@@ -582,10 +582,33 @@ def _generate_integral_distractors(correct_answer_str, params):
         distractors.append(fmt_expr((k / (a*(n+1))) * inner**n))  # pangkat n bukan n+1
     
     # ============================================================
+    # LEVEL 9: Trig Identity
+    # ============================================================
+    elif problem_type == 'integral_trig_identity':
+        a = params.get('a', 1)
+        func_choice = params.get('func', 'sin2')
+        
+        # Jawaban benar sudah menggunakan identitas, misal: x/2 - sin(2x)/4
+        # Distraktor: salah tanda atau lupa bagi 2
+        try:
+            if isinstance(correct_expr, Add):
+                terms = correct_expr.args
+                if len(terms) >= 2:
+                    # Ganti tanda suku kedua
+                    distractors.append(fmt_expr(terms[0] + terms[1]))
+                if len(terms) >= 2 and isinstance(terms[0], Mul):
+                    # Lupa bagi 2 pada suku pertama
+                    coeff = terms[0].args[0] if len(terms[0].args) > 0 else 1
+                    rest = Mul(*terms[0].args[1:]) if len(terms[0].args) > 1 else 1
+                    distractors.append(fmt_expr(2*coeff*rest + terms[1]))
+        except Exception:
+            pass
+    
+    # ============================================================
     # LEVEL 8-15: Advanced Techniques
     # ============================================================
     elif problem_type in ('integral_substitution_advanced', 'integral_by_parts', 
-                          'integral_trig_identity', 'integral_trig_substitution',
+                          'integral_trig_substitution',
                           'integral_partial_fractions', 'integral_trick_substitution_vs_parts',
                           'integral_definite_trick', 'integral_seemingly_impossible'):
         # Untuk teknik lanjutan, buat distraktor dengan kesalahan umum:
@@ -837,6 +860,31 @@ def generate_options(correct_answer, params=None):
         wrong_options = list(options)
         wrong_options.sort(key=option_score)
         selected_wrong = wrong_options[:3]
+    
+    # Fallback: Jika selected_wrong kosong atau kurang dari 3, buat distraktor sederhana
+    if len(selected_wrong) < 3:
+        x = Symbol('x')
+        simple_fallbacks = [
+            "1/2", "1/3", "1/4", "1/5", "1/6", "1/8",
+            "2/3", "3/4", "2/5", "3/5",
+            "-1/2", "-1/3", "-1/4",
+            "1", "2", "3", "0"
+        ]
+        
+        for fallback in simple_fallbacks:
+            if fallback != str(correct_answer) and fallback not in selected_wrong:
+                selected_wrong.append(fallback)
+            if len(selected_wrong) >= 3:
+                break
+    
+    # Jika masih kurang, buat dari ekspresi x
+    if len(selected_wrong) < 3 and 'x' in str(correct_answer):
+        x_variations = [f"{x}", f"2*{x}", f"x^2", f"x/2", f"x+1", f"x-1"]
+        for var in x_variations:
+            if var != str(correct_answer) and var not in selected_wrong:
+                selected_wrong.append(var)
+            if len(selected_wrong) >= 3:
+                break
 
     final_options = selected_wrong + [str(correct_answer)]
     random.shuffle(final_options)

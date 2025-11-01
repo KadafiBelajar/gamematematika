@@ -3,6 +3,65 @@
 // ==========================================================
 let characterAnimator = null;
 let soundManager = null;
+let globalBackgroundMusic = null; // Global audio instance
+
+// ==========================================================
+// --- GLOBAL BACKGROUND MUSIC ---
+// ==========================================================
+let lastSavedTime = 0; // Global variable for tracking last save time
+
+function initializeGlobalBackgroundMusic() {
+    // Create new audio instance
+    globalBackgroundMusic = new Audio('/static/assets/sounds/background-music.MP3');
+    globalBackgroundMusic.loop = true;
+    globalBackgroundMusic.volume = 0.3;
+    
+    // Try to restore playback position from sessionStorage
+    const savedPosition = sessionStorage.getItem('musicPosition');
+    const savedStartTime = sessionStorage.getItem('musicStartTime');
+    
+    if (savedPosition && savedStartTime) {
+        const now = Date.now();
+        const elapsed = (now - parseInt(savedStartTime)) / 1000; // elapsed in seconds
+        const position = parseFloat(savedPosition) + elapsed;
+        
+        // Limit to audio duration to avoid issues
+        globalBackgroundMusic.addEventListener('loadedmetadata', () => {
+            const duration = globalBackgroundMusic.duration;
+            if (position < duration && position > 0) {
+                globalBackgroundMusic.currentTime = position;
+                console.log(`🎵 Resuming music at position: ${position.toFixed(1)}s`);
+            }
+        });
+    }
+    
+    // Handle errors
+    globalBackgroundMusic.addEventListener('error', (e) => {
+        console.error('❌ Error loading background music:', e);
+    });
+    
+    // Save playback position every 5 seconds
+    globalBackgroundMusic.addEventListener('timeupdate', () => {
+        const now = Date.now();
+        if (now - lastSavedTime > 5000) { // Save every 5 seconds
+            sessionStorage.setItem('musicPosition', globalBackgroundMusic.currentTime.toString());
+            sessionStorage.setItem('musicStartTime', now.toString());
+            lastSavedTime = now;
+        }
+    });
+    
+    console.log('🎵 Global background music created');
+}
+
+function startGlobalBackgroundMusic() {
+    if (globalBackgroundMusic) {
+        globalBackgroundMusic.play().catch(e => {
+            console.warn('⚠️ Could not play background music:', e);
+        });
+    } else {
+        initializeGlobalBackgroundMusic();
+    }
+}
 
 // ==========================================================
 // --- PARTICLES ANIMATION ---
@@ -180,6 +239,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Initialize managers (Character Animator & Sound Manager)
     await initializeManagers();
     
+    // Note: Global background music is NOT started here for non-battle pages
+    // Background music will only play in battle mode (handled in battle-specific code below)
+    
     const devToggle = document.getElementById('dev-mode-toggle');
     if (devToggle) {
         devToggle.addEventListener('change', async function() {
@@ -288,8 +350,9 @@ document.addEventListener('DOMContentLoaded', () => {
         ui.pauseOverlay.classList.remove('hidden');
         ui.pauseOverlay.style.display = 'flex';
         ui.pauseOverlay.style.visibility = 'visible';
-        if (soundManager) {
-            soundManager.pauseBackgroundMusic();
+        // Pause global background music
+        if (globalBackgroundMusic) {
+            globalBackgroundMusic.pause();
         }
     }
     
@@ -298,8 +361,9 @@ document.addEventListener('DOMContentLoaded', () => {
         ui.pauseOverlay.classList.add('hidden');
         ui.pauseOverlay.style.display = 'none';
         ui.pauseOverlay.style.visibility = 'hidden';
-        if (soundManager) {
-            soundManager.resumeBackgroundMusic();
+        // Resume global background music
+        if (globalBackgroundMusic) {
+            globalBackgroundMusic.play();
         }
     }
     
@@ -406,8 +470,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // Play victory sound
             if (soundManager) {
                 soundManager.play('victory');
-                soundManager.stopBackgroundMusic();
             }
+            // Note: Background music continues playing
             
             setTimeout(() => {
                 showVictoryOverlay();
@@ -420,8 +484,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // Play defeat sound
             if (soundManager) {
                 soundManager.play('defeat');
-                soundManager.stopBackgroundMusic();
             }
+            // Note: Background music continues playing
             
             setTimeout(() => {
                 showGameOverOverlay();
@@ -829,12 +893,13 @@ document.addEventListener('DOMContentLoaded', () => {
             ui.sfxVolumeValue.textContent = `${sfxVolume}%`;
         }
         
-        // Apply initial volume to sound manager
+        // Apply initial volume to global background music
+        if (globalBackgroundMusic) {
+            globalBackgroundMusic.volume = musicVolume / 100;
+        }
+        
+        // Apply volume to sound effects
         if (soundManager) {
-            if (soundManager.backgroundMusic) {
-                soundManager.backgroundMusic.volume = musicVolume / 100;
-            }
-            
             Object.keys(soundManager.sounds).forEach(key => {
                 if (soundManager.sounds[key]) {
                     const baseVolume = soundManager.config.sounds[key].volume || 0.5;
@@ -847,17 +912,18 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- MULAI PERMAINAN ---
     console.log('Initializing game...');
     
+    // Initialize global background music for battle mode
+    initializeGlobalBackgroundMusic();
+    
     // Initialize volume controls
     initializeVolume();
     
-    // Start background music on first user interaction
+    // Start global background music on first user interaction
     const startBackgroundMusic = () => {
-        if (soundManager) {
-            soundManager.playBackgroundMusic();
+        if (globalBackgroundMusic) {
+            globalBackgroundMusic.play();
             // Apply music volume after starting
-            if (soundManager.backgroundMusic) {
-                soundManager.backgroundMusic.volume = musicVolume / 100;
-            }
+            globalBackgroundMusic.volume = musicVolume / 100;
         }
         // Remove listeners after first interaction
         document.removeEventListener('click', startBackgroundMusic);

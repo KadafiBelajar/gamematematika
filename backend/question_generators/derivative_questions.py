@@ -204,7 +204,7 @@ def _level14():
     fp = diff(f, x)
     ans = fp.subs(x, c0)
     return {
-        "latex": rf"\text{{Diketahui }} f(x) = {latex(f)}.\, \text{{Tentukan gradien garis singgung kurva di }} x = {c0}.",
+        "latex": rf"\begin{{align*}} &\text{{Diketahui }} f(x) = {latex(f)} \\ &\text{{Tentukan gradien garis singgung kurva di }} x = {c0} \end{{align*}}",
         "answer": _fmt_answer(ans),
         "params": {"type": "tangent_gradient", "point": c0}
     }
@@ -227,7 +227,7 @@ def _level15():
     target_y = f.subs(x, target_x)
     ans = f"({simplify(target_x)}, {simplify(target_y)})"
     return {
-        "latex": rf"\text{{Tentukan koordinat titik stasioner }} (x, f(x)) \text{{ dari }} f(x) = {latex(f)}.",
+        "latex": rf"\begin{{align*}} &\text{{Tentukan koordinat titik stasioner}} \\ &(x, f(x)) \text{{ dari }} f(x) = {latex(f)} \end{{align*}}",
         "answer": ans,
         "params": {"type": "stationary_points", "a": a, "b": b, "c": c, "f_str": str(f)}
     }
