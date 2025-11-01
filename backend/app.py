@@ -32,6 +32,12 @@ app.secret_key = "kunci-rahasia-yang-sangat-aman-dan-unik"
 @app.route("/")
 def index():
     """Menampilkan halaman utama."""
+    # Runtime debug logging
+    print(f"[RUNTIME DEBUG] Flask template_folder: {app.template_folder}")
+    print(f"[RUNTIME DEBUG] Flask static_folder: {app.static_folder}")
+    print(f"[RUNTIME DEBUG] Template folder exists: {os.path.exists(app.template_folder)}")
+    if os.path.exists(app.template_folder):
+        print(f"[RUNTIME DEBUG] Files in template_folder: {os.listdir(app.template_folder)}")
     return render_template("index.html")
 
 @app.route("/stages")
