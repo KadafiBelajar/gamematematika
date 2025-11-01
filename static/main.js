@@ -104,7 +104,7 @@ function createSlashEffect(target = 'boss') {
     setTimeout(() => slash.remove(), 500);
 }
 
-function animateAttack(attacker) {
+function animateAttack(attacker, playSound = true) {
     const element = document.getElementById(`${attacker}-avatar`);
     if (element) {
         element.classList.add('attacking');
@@ -116,14 +116,14 @@ function animateAttack(attacker) {
         characterAnimator.playAttackAnimation(attacker);
     }
     
-    // Play attack sound
-    if (soundManager) {
+    // Play attack sound (disabled by default to avoid duplicate sounds)
+    if (playSound && soundManager) {
         const soundKey = attacker === 'player' ? 'playerAttack' : 'bossAttack';
         soundManager.play(soundKey);
     }
 }
 
-function animateDamage(target) {
+function animateDamage(target, playSound = true) {
     const element = document.getElementById(`${target}-avatar`);
     const hpBar = document.getElementById(`${target}-hp-bar`);
     
@@ -142,8 +142,8 @@ function animateDamage(target) {
         characterAnimator.playHitAnimation(target);
     }
     
-    // Play hit sound
-    if (soundManager) {
+    // Play hit sound (disabled by default to avoid duplicate sounds)
+    if (playSound && soundManager) {
         const soundKey = target === 'player' ? 'playerHit' : 'bossHit';
         soundManager.play(soundKey);
     }
@@ -445,10 +445,8 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (damageTo === 'player') {
             playerHP -= amount;
-            animateDamage('player');
         } else if (damageTo === 'boss') {
             bossHP -= amount;
-            animateDamage('boss');
         }
 
         console.log('After damage - Player HP:', playerHP, 'Boss HP:', bossHP);
@@ -490,6 +488,9 @@ document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => {
                 showGameOverOverlay();
             }, 500);
+        } else {
+            // Only play damage animation if game is not over
+            animateDamage(damageTo);
         }
     };
 
@@ -518,8 +519,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // Play correct sound
             if (soundManager) soundManager.play('correct');
             
-            // Animate player attack
-            animateAttack('player');
+            // Animate player attack (no sound, already played above)
+            animateAttack('player', false);
             createSlashEffect('boss');
             
             setTimeout(() => {
@@ -532,8 +533,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // Play wrong sound
             if (soundManager) soundManager.play('wrong');
             
-            // Animate boss attack
-            animateAttack('boss');
+            // Animate boss attack (no sound, already played above)
+            animateAttack('boss', false);
             createSlashEffect('player');
             
             setTimeout(() => {
