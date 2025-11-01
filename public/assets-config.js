@@ -81,70 +81,70 @@ const ASSETS_CONFIG = {
         
         // Sound effect saat player menyerang
         playerAttack: {
-            src: '/public/assets/sounds/player-attack.mp3',
+            src: '/public/assets/sounds/player-attack.MP3',
             volume: 0.5,
             enabled: true
         },
         
         // Sound effect saat boss menyerang
         bossAttack: {
-            src: '/public/assets/sounds/boss-attack.mp3',
+            src: '/public/assets/sounds/boss-attack.MP3',
             volume: 0.5,
             enabled: true
         },
         
-        // Sound effect saat player kena damage
+        // Sound effect saat player kena damage (gunakan boss-attack sebagai fallback)
         playerHit: {
-            src: '/public/assets/sounds/player-hit.mp3',
+            src: '/public/assets/sounds/boss-attack.MP3',
             volume: 0.4,
             enabled: true
         },
         
-        // Sound effect saat boss kena damage
+        // Sound effect saat boss kena damage (gunakan player-attack sebagai fallback)
         bossHit: {
-            src: '/public/assets/sounds/boss-hit.mp3',
+            src: '/public/assets/sounds/player-attack.MP3',
             volume: 0.4,
             enabled: true
         },
         
         // Sound effect saat heal
         heal: {
-            src: '/public/assets/sounds/heal.mp3',
+            src: '/public/assets/sounds/heal.MP3',
             volume: 0.5,
             enabled: true
         },
         
-        // Sound effect saat jawaban benar
+        // Sound effect saat jawaban benar (gunakan victory sebagai fallback)
         correct: {
-            src: '/public/assets/sounds/correct.mp3',
+            src: '/public/assets/sounds/victory.MP3',
             volume: 0.6,
             enabled: true
         },
         
-        // Sound effect saat jawaban salah
+        // Sound effect saat jawaban salah (gunakan defeat sebagai fallback)
         wrong: {
-            src: '/public/assets/sounds/wrong.mp3',
+            src: '/public/assets/sounds/defeat.MP3',
             volume: 0.5,
             enabled: true
         },
         
         // Sound effect saat victory
         victory: {
-            src: '/public/assets/sounds/victory.mp3',
+            src: '/public/assets/sounds/victory.MP3',
             volume: 0.7,
             enabled: true
         },
         
         // Sound effect saat defeat
         defeat: {
-            src: '/public/assets/sounds/defeat.mp3',
+            src: '/public/assets/sounds/defeat.MP3',
             volume: 0.6,
             enabled: true
         },
         
         // Sound effect timer warning (10 detik terakhir)
         timerWarning: {
-            src: '/public/assets/sounds/timer-warning.mp3',
+            src: '/public/assets/sounds/timer-warning.MP3',
             volume: 0.3,
             enabled: true
         }
