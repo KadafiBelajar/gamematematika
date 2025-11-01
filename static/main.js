@@ -489,8 +489,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 showGameOverOverlay();
             }, 500);
         } else {
-            // Only play damage animation if game is not over
-            animateDamage(damageTo);
+            // Only play damage animation if game is not over (no sound, playerHit/bossHit files don't exist yet)
+            animateDamage(damageTo, false);
         }
     };
 
