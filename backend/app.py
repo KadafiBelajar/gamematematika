@@ -8,11 +8,9 @@ from grader import check_answer, generate_limit_explanation
 # Deteksi apakah running di Vercel
 is_vercel = os.environ.get('VERCEL', '0') == '1'
 if is_vercel:
-    # Di Vercel, path absolut dari root project
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    parent_dir = os.path.dirname(current_dir)
-    template_folder = os.path.join(parent_dir, 'templates')
-    static_folder = os.path.join(parent_dir, 'static')
+    # Di Vercel, dari root project (working directory di root saat runtime dari api/)
+    template_folder = 'templates'
+    static_folder = 'static'
 else:
     # Di local, path relatif dari backend/
     template_folder = '../templates'
