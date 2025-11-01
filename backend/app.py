@@ -11,6 +11,9 @@ if is_vercel:
     # Di Vercel, dari root project (working directory di root saat runtime dari api/)
     template_folder = 'templates'
     static_folder = 'static'
+    # Debug logging untuk Vercel
+    print(f"[VERCEL DEBUG] cwd: {os.getcwd()}, template_folder: {template_folder}")
+    print(f"[VERCEL DEBUG] template folder exists: {os.path.exists(template_folder)}")
 else:
     # Di local, path relatif dari backend/
     template_folder = '../templates'
