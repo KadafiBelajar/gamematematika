@@ -13,7 +13,7 @@ if is_vercel:
     backend_dir = os.path.dirname(current_file)  # /var/task/backend
     parent_dir = os.path.dirname(backend_dir)  # /var/task
     template_folder = os.path.join(parent_dir, 'templates')  # /var/task/templates
-    static_folder = os.path.join(parent_dir, 'public')  # /var/task/public (Vercel menggunakan public/)
+    static_folder = os.path.join(parent_dir, 'static')  # /var/task/static (Flask static path tetap static)
     # Debug logging untuk Vercel
     print(f"[VERCEL DEBUG] cwd: {os.getcwd()}")
     print(f"[VERCEL DEBUG] __file__: {current_file}")

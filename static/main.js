@@ -12,7 +12,7 @@ let lastSavedTime = 0; // Global variable for tracking last save time
 
 function initializeGlobalBackgroundMusic() {
     // Create new audio instance
-    globalBackgroundMusic = new Audio('/static/assets/sounds/background-music.MP3');
+    globalBackgroundMusic = new Audio('/public/assets/sounds/background-music.mp3');
     globalBackgroundMusic.loop = true;
     globalBackgroundMusic.volume = 0.3;
     
